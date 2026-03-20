@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberQahramon — Kiberxavfsizlik O'yini</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --panel: #0a1520;
+    --border: #00ff9d;
+    --border2: #0a4a2a;
+    --accent: #00ff9d;
+    --accent2: #00cfff;
+    --danger: #ff3c5a;
+    --warn: #ffbe00;
+    --text: #c8ffe8;
+    --dim: #4a7a60;
+    --glow: 0 0 20px #00ff9d44;
+    --glow2: 0 0 30px #00ff9d88;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(40px); }
+  }
+
+  .scanline {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  #app {
+    position: relative;
+    z-index: 2;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 30px 0 20px;
+    border-bottom: 1px solid var(--border2);
+    margin-bottom: 30px;
+  }
+
+  .header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.6rem, 5vw, 2.8rem);
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow2);
+    letter-spacing: 3px;
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { text-shadow: 0 0 20px #00ff9d88; }
+    50% { text-shadow: 0 0 40px #00ff9dcc, 0 0 60px #00ff9d44; }
+  }
+
+  .header p {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--dim);
+    font-size: 0.85rem;
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat-box {
+    flex: 1;
+    min-width: 120px;
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    margin-top: 4px;
+  }
+
+  .stat-value.danger { color: var(--danger); text-shadow: 0 0 15px #ff3c5a66; }
+  .stat-value.warn { color: var(--warn); text-shadow: 0 0 15px #ffbe0066; }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    height: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  /* Screen panels */
+  .screen {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .screen.active { display: flex; }
+
+  /* Welcome screen */
+  .welcome-card {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-card::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, #00ff9d22, transparent, #00cfff22) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+  }
+
+  .welcome-icon {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .welcome-card h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .welcome-card p {
+    color: var(--text);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 12px;
+    opacity: 0.85;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .feature-item {
+    background: rgba(0,255,157,0.05);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 0.95rem;
+  }
+
+  .feature-item .fi-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+  .feature-item strong { color: var(--accent); display: block; margin-bottom: 4px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  .btn-primary:hover {
+    background: #00ffb3;
+    box-shadow: var(--glow2);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(0,207,255,0.1);
+    box-shadow: 0 0 20px #00cfff44;
+    transform: translateY(-2px);
+  }
+
+  .btn-danger {
+    background: rgba(255,60,90,0.15);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+  }
+
+  .btn-danger:hover { background: rgba(255,60,90,0.25); }
+
+  /* Question card */
+  .question-card {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+  }
+
+  .q-category {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .q-category::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent2);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent2);
+    animation: blink 1s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .q-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: #e8fff5;
+    margin-bottom: 20px;
+  }
+
+  /* Email/message display */
+  .email-box {
+    background: #0d1f12;
+    border: 1px solid #1a3a22;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  .email-header {
+    border-bottom: 1px solid #1a3a22;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  .email-field { margin-bottom: 4px; }
+  .email-label { color: var(--dim); }
+  .email-value { color: var(--text); }
+  .email-suspicious { color: var(--danger); }
+
+  .email-body { color: #a0d4b8; }
+
+  /* Answer options */
+  .options-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .option-btn {
+    background: rgba(0,255,157,0.04);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    background: rgba(0,255,157,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  .option-btn.correct {
+    background: rgba(0,255,157,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .option-btn.wrong {
+    background: rgba(255,60,90,0.15);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .option-btn:disabled { cursor: not-allowed; }
+
+  .option-letter {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--accent2);
+  }
+
+  /* Feedback box */
+  .feedback-box {
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .feedback-box.show { display: block; }
+  .feedback-box.correct { background: rgba(0,255,157,0.1); border: 1px solid var(--accent); color: var(--accent); }
+  .feedback-box.wrong { background: rgba(255,60,90,0.1); border: 1px solid var(--danger); color: #ffb3bf; }
+
+  .feedback-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Result screen */
+  .result-screen {
+    text-align: center;
+  }
+
+  .result-badge {
+    font-size: 6rem;
+    display: block;
+    margin: 0 auto 20px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .result-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+
+  .result-score {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: var(--glow2);
+    margin: 16px 0;
+  }
+
+  .result-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .rb-item {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .rb-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .rb-label {
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  .tips-section {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .tips-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .tip-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border2);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .tip-item:last-child { border-bottom: none; }
+  .tip-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+  /* Floating particles */
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleFloat linear infinite;
+  }
+
+  @keyframes particleFloat {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-100px) translateX(var(--drift)); opacity: 0; }
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .result-breakdown { grid-template-columns: repeat(3, 1fr); }
+    .welcome-card { padding: 24px 16px; }
+    .question-card { padding: 20px 16px; }
+    .stats-bar { gap: 10px; }
+    .stat-value { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="particles" id="particles"></div>
+
+<div id="app">
+  <div class="header">
+    <h1>⚔️ CYBERQAHRAMON</h1>
+    <p>[ KIBERXAVFSIZLIK SIMULYATORI v1.0 ]</p>
+  </div>
+
+  <!-- Welcome Screen -->
+  <div class="screen active" id="screen-welcome">
+    <div class="welcome-card">
+      <span class="welcome-icon">🛡️</span>
+      <h2>INTERNETDA XAVFSIZ BO'LISHNI O'RGAN!</h2>
+      <p>Bu o'yin orqali haqiqiy xakerlar ishlatadigan hiylalarni bilib olasiz va o'zingizni himoya qilishni o'rganasiz.</p>
+
+      <div class="feature-grid">
+        <div class="feature-item">
+          <span class="fi-icon">🎣</span>
+          <strong>Phishing</strong>
+          Soxta xabarlarni aniqlashni o'rgan
+        </div>
+        <div class="feature-item">
+          <span class="fi-icon">🔐</span>
+          <strong>Parol xavfsizligi</strong>
+          Kuchli parol yaratish sirlarini bil
+        </div>
+        <div class="feature-item">
+          <span class="fi-icon">🌐</span>
+          <strong>Internet xavfsizligi</strong>
+          Xavfli saytlardan himoyalanish
+        </div>
+      </div>
+
+      <p style="color: var(--dim); font-size: 0.9rem;">17 ta savol • ~8 daqiqa • Bepul</p>
+
+      <div class="btn-group" style="margin-top: 24px;">
+        <button class="btn btn-primary" onclick="startGame()">🚀 O'YINNI BOSHLASH</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="screen" id="screen-game">
+    <div class="stats-bar">
+      <div class="stat-box">
+        <div class="stat-label">SAVOL</div>
+        <div class="stat-value" id="q-counter">1/10</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">BALL</div>
+        <div class="stat-value" id="score-display">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">TO'G'RI</div>
+        <div class="stat-value" id="correct-display">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">XATO</div>
+        <div class="stat-value danger" id="wrong-display">0</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+
+    <div class="question-card" id="question-card">
+      <div class="q-category" id="q-category">YUKLANMOQDA...</div>
+      <div class="q-text" id="q-text"></div>
+      <div id="q-extra"></div>
+      <div class="options-grid" id="options-container"></div>
+      <div class="feedback-box" id="feedback-box">
+        <div class="feedback-title" id="feedback-title"></div>
+        <div id="feedback-text"></div>
+      </div>
+    </div>
+
+    <div class="btn-group" id="next-btn-wrap" style="display:none;">
+      <button class="btn btn-primary" onclick="nextQuestion()">KEYINGI SAVOL →</button>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div class="screen" id="screen-result">
+    <div class="result-screen">
+      <span class="result-badge" id="result-badge">🏆</span>
+      <div class="result-title" id="result-title"></div>
+      <div class="result-score" id="result-score"></div>
+
+      <div class="result-breakdown">
+        <div class="rb-item">
+          <div class="rb-num" id="rb-correct" style="color: var(--accent)">0</div>
+          <div class="rb-label">To'g'ri javob</div>
+        </div>
+        <div class="rb-item">
+          <div class="rb-num" id="rb-wrong" style="color: var(--danger)">0</div>
+          <div class="rb-label">Xato javob</div>
+        </div>
+        <div class="rb-item">
+          <div class="rb-num" id="rb-score">0</div>
+          <div class="rb-label">Umumiy ball</div>
+        </div>
+      </div>
+
+      <div class="tips-section">
+        <div class="tips-title">📋 ASOSIY QOIDALAR — ESLAB QOL!</div>
+        <div class="tip-item"><span class="tip-icon">🔗</span><span><strong>URL tekshir:</strong> Har doim sayt manzilini diqqat bilan o'qi. "g00gle.com" yoki "bank-uz.info" — soxta!</span></div>
+        <div class="tip-item"><span class="tip-icon">🔑</span><span><strong>Kuchli parol:</strong> Kamida 12 ta belgi, katta/kichik harf, raqam va maxsus belgilar. Har bir sayt uchun alohida parol!</span></div>
+        <div class="tip-item"><span class="tip-icon">📱</span><span><strong>2FA yoq:</strong> Har doim ikki bosqichli tasdiqlashni yoq. SMS kod qo'shimcha himoya beradi.</span></div>
+        <div class="tip-item"><span class="tip-icon">⚡</span><span><strong>Shoshma!</strong> "Tez harakatlaning!" degan xabarlar — firibgarlik belgisi. Hech qachon shoshib qaror qilma.</span></div>
+        <div class="tip-item"><span class="tip-icon">🔒</span><span><strong>HTTPS tekshir:</strong> Muhim ma'lumot kiritishdan oldin manzil qatorida 🔒 belgisi borligini tekshir.</span></div>
+      </div>
+
+      <div class="btn-group" style="margin-top: 24px;">
+        <button class="btn btn-primary" onclick="restartGame()">🔄 QAYTA O'YNASH</button>
+        <button class="btn btn-secondary" onclick="shareResult()">📤 NATIJANI ULASHISH</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Questions database
+const questions = [
+  {
+    category: "PHISHING ANIQLASH",
+    text: "Quyidagi emailni o'qing. Bu xabar xavfsizmi?",
+    extra: {
+      type: "email",
+      from: "noreply@paypal-secure-verify.com",
+      subject: "⚠️ Hisobingiz bloklanishi mumkin! Zudlik bilan harakat qiling!",
+      body: `Hurmatli foydalanuvchi,\n\nHisobingizda shubhali faoliyat aniqlandi.\n24 soat ichida ma'lumotlaringizni tasdiqlamasangiz, hisobingiz BLOKLANADI!\n\n👉 HOZIROQ TASDIQLANG: http://paypal.secure-verify-account.xyz\n\nPayPal Xavfsizlik Jamoasi`
+    },
+    options: [
+      "Ha, xavfsiz — PayPal dan kelgan",
+      "Yo'q, bu phishing xujum!",
+      "Bilmayman, havola ochib ko'raman",
+      "Xabarni do'stlarimga yo'llaman"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "🎯 To'g'ri! Bu klassik phishing xujumi. Belgilari: 1) Soxta domen (paypal-secure-verify.com ≠ paypal.com) 2) Qo'rqitish uslubi ('24 soat', 'bloklanadi') 3) Shoshirishtirishga harakat 4) Shubhali havola.",
+      wrong: "Bu phishing xujumi! Haqiqiy PayPal xabarlari faqat paypal.com domenidan keladi. Hech qachon bunday havolaga kirma!"
+    }
+  },
+  {
+    category: "PAROL XAVFSIZLIGI",
+    text: "Quyidagi parollardan qaysi biri ENG XAVFSIZ?",
+    options: [
+      "qwerty123",
+      "Asliddin1990",
+      "K@t3!mX#9pL$2n",
+      "parol2024"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🔐 To'g'ri! 'K@t3!mX#9pL$2n' — katta/kichik harf, raqam va maxsus belgilar aralashmasi. Taxmin qilish deyarli imkonsiz. Ideal uzunlik: 12+ belgi.",
+      wrong: "Eng xavfsiz parol — 'K@t3!mX#9pL$2n'. U turli turdagi belgilarni o'z ichiga oladi va uzun. 'qwerty123' yoki 'parol2024' — eng ko'p ishlatiladigan va xavfli parollar!"
+    }
+  },
+  {
+    category: "INTERNET XAVFSIZLIGI",
+    text: "Do'stingiz sizga Telegram orqali: 'Shoshilinch! Mening kartam bloklanib qoldi, menga 500 000 so'm yuborchi, ertaga qaytaraman' deb yozdi. Nima qilasiz?",
+    options: [
+      "Darhol pul yuboraman, do'stim qiynalmasin",
+      "Do'stimga qo'ng'iroq qilib, haqiqatligini tekshiraman",
+      "Xabarni o'qimasdan o'chiraman",
+      "Boshqa do'stlarimga ham xabar beraman"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "✅ To'g'ri! Do'stingiz Telegram akkauntini o'g'irlashgan bo'lishi mumkin. HECH QACHON tekshirmasdan pul yuborma. Qo'ng'iroq qilib haqiqatligini aniqla!",
+      wrong: "Xavfli! Do'stingizning akkauntini xakerlar o'g'irlab, sizdan pul so'rashi mumkin. Har doim telefon qo'ng'irog'i orqali tasdiqlang!"
+    }
+  },
+  {
+    category: "SAYT XAVFSIZLIGI",
+    text: "Bank saytiga kirib plastik karta ma'lumotlarini kiritmoqchisiz. Qaysi manzil XAVFSIZ?",
+    options: [
+      "http://uzbank-online.com/login",
+      "https://uzbank.uz/kabinet",
+      "https://uzbank-secure-login.net",
+      "http://www.uzbank.uz"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "🔒 To'g'ri! 'https://uzbank.uz' — to'g'ri rasmiy domen + HTTPS shifrlash. Qolganlari: birinchi (http, xavfsiz emas), uchinchi (soxta domen), to'rtinchi (http, xavfsiz emas).",
+      wrong: "To'g'ri javob: https://uzbank.uz. HTTPS va rasmiy domen (.uz) — ikki muhim belgi. 'uzbank-secure-login.net' kabi domenlar — firibgarlik!"
+    }
+  },
+  {
+    category: "IJTIMOIY MUHANDISLIK",
+    text: "Telefon orqali 'bank xodimi' qo'ng'iroq qilib, kartangizni tekshirish uchun 16 raqamli karta raqami va CVV kodini so'radi. Nima qilasiz?",
+    options: [
+      "Beraman — xodim ehtiyot chorasi uchun so'rayapti",
+      "Faqat karta raqamini beraman, CVV ni bermayman",
+      "Qo'ng'iroqni kesaman va bankka rasmiy raqamdan qo'ng'iroq qilaman",
+      "Raqamlarni birma-bir aytaman, lekin oxirgi ikki raqamni o'zgartirib"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🛡️ To'g'ri! Haqiqiy bank xodimlari HECH QACHON CVV va to'liq karta ma'lumotlarini so'ramaydi. Bunday qo'ng'iroqlar — 100% firibgarlik! Bankga kartaning orqa tomonidagi rasmiy raqamdan qo'ng'iroq qil.",
+      wrong: "Xavfli! Hech qachon telefon orqali karta ma'lumotlarini berma. Haqiqiy bank xodimlari buni so'rashiga huquqlari yo'q. Bu — ijtimoiy muhandislik hujumi!"
+    }
+  },
+  {
+    category: "PAROL XAVFSIZLIGI",
+    text: "Qaysi xatti-harakat parol xavfsizligini BUZADI?",
+    options: [
+      "Har 3 oyda parolni o'zgartirish",
+      "Parol menejeridan foydalanish",
+      "Barcha saytlarda bir xil parol ishlatish",
+      "Ikki bosqichli tasdiqlashni yoqish"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "⚠️ To'g'ri! Bir xil parolni hamma joyda ishlatish eng xavfli odatlardan biri. Agar bitta sayt hacklanib parolingiz o'g'irlansa, barcha akkauntlaringiz xavf ostida!",
+      wrong: "Bir xil parolni hamma joyda ishlatish — eng katta xato! Agar bitta sayt hacklanib parolingiz o'g'irlansa, xakerlar boshqa barcha akkauntlaringizga ham kira oladi."
+    }
+  },
+  {
+    category: "PHISHING ANIQLASH",
+    text: "Instagram'da notanish odam: 'Siz 1,000,000 so'm yutdingiz! Mukofotni olish uchun kartangizga 50,000 so'm komissiya to'lang' deb yozdi. Bu nima?",
+    options: [
+      "Haqiqiy tanlov — baxtim kulib boqdi!",
+      "Reklama — qiziqarli taklif",
+      "Klassik firibgarlik sxemasi",
+      "Ehtimol haqiqiy — tekshirib ko'raman"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🎯 To'g'ri! 'Komissiya to'lab mukofot ol' — klassik firibgarlik. Haqiqiy tanlovlarda HECH QACHON sovg'a olish uchun pul to'latilmaydi. Bu yerda maqsad — 50 000 so'mingizni o'g'irlash!",
+      wrong: "Bu 100% firibgarlik! 'Avans to'lab mukofot ol' sxemasi — internetdagi eng ko'p tarqalgan aldov. Hech qachon bunday 'mukofot' uchun pul to'lama!"
+    }
+  },
+  {
+    category: "INTERNET XAVFSIZLIGI",
+    text: "Jamoat joyidagi bepul WiFi'ga ulangansiz. Nima qilish XAVFLI?",
+    options: [
+      "Yangiliklar o'qish",
+      "YouTube ko'rish",
+      "Internet-banking va karta ma'lumotlari kiritish",
+      "Ob-havo tekshirish"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🔓 To'g'ri! Jamoat WiFi'da ma'lumotlar shifrlashsiz uzatiladi. Xakerlar 'Man-in-the-middle' hujum orqali karta ma'lumotlaringizni ushlab qolishi mumkin. Bank operatsiyalari uchun mobil internet ishlat!",
+      wrong: "Jamoat WiFi'da bank operatsiyalari o'ta xavfli! Xakerlar bir xil tarmoqda ma'lumotlaringizni o'g'irlashi mumkin. Faqat mobil internet (4G/5G) orqali bankingizga kiring."
+    }
+  },
+  {
+    category: "IJTIMOIY TARMOQLAR",
+    text: "Ijtimoiy tarmoqlarda qanday ma'lumot ulashish XAVFLI?",
+    options: [
+      "Sevimli film haqida post",
+      "Pasport ma'lumotlari va yashash manzilingiz",
+      "Dam olish joyidagi rasm",
+      "Musiqa tavsiyasi"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "🚫 To'g'ri! Pasport ma'lumotlari, yashash manzili, telefon raqami kabi shaxsiy ma'lumotlarni ijtimoiy tarmoqlarda ulashish juda xavfli. Firibgarlar bu ma'lumotlardan sizning nomingizdan kredit olish yoki boshqa aldovlar uchun foydalanishi mumkin!",
+      wrong: "Pasport ma'lumotlari va yashash manzilingizni ijtimoiy tarmoqlarda HECH QACHON ulashmang! Firibgarlar bu ma'lumotlardan sizni aldash yoki sizning nomingizdan qarz olish uchun foydalanadi."
+    }
+  },
+  {
+    category: "XAVFSIZLIK ASOSLARI",
+    text: "Akkauntingizni eng kuchli himoya qilish uchun qaysi choralarni ko'rish kerak?",
+    options: [
+      "Faqat kuchli parol qo'yish yetarli",
+      "Kuchli parol + ikki bosqichli tasdiqlash (2FA)",
+      "Tez-tez parolni o'zgartirish",
+      "Parolni qog'ozga yozib saqlash"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "🏆 To'g'ri! Kuchli parol + 2FA — oltin kombinatsiya. 2FA yoqilganda, parolingiz o'g'irlansa ham, SMS kod bo'lmasa xaker kira olmaydi. Barcha muhim akkauntlaringizda (bank, email, ijtimoiy tarmoqlar) 2FA ni yoqing!",
+      wrong: "Eng kuchli himoya = Kuchli parol + 2FA (ikki bosqichli tasdiqlash). Parolingiz o'g'irlansa ham, SMS kod bo'lmasa xaker kira olmaydi!"
+    }
+  },
+  {
+    category: "SCAM VA FIRIBGARLIK",
+    text: "OLX.uz da arzon narxda iPhone sotilayapti. Sotuvchi: 'Pul avval o'tkazing, tovarni yetkazib beraman' dedi. Nima qilasiz?",
+    options: [
+      "Pul o'tkazaman — narxi juda arzon!",
+      "Avval tovarni ko'rib, keyin to'layman yoki uchrashib sotib olaman",
+      "Yarmi avval, yarmi keyinchalik to'layman",
+      "Do'stimga so'rab ko'raman"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "✅ To'g'ri! 'Avval pul, keyin tovar' — klassik internet firibgarligi. Har doim tovarni ko'rib, yuzma-yuz uchrashib sotib ol. Notanish odamga avvaldan pul o'tkazma!",
+      wrong: "Xavfli! 'Avval pul o'tkazing' talab qiladigan sotuvchilar ko'pincha firibgar. Pul yuborib tovarni ololmay qolasiz. Har doim yuzma-yuz uchrashib sotib oling!"
+    }
+  },
+  {
+    category: "SCAM VA FIRIBGARLIK",
+    text: "Telefoningizga SMS keldi: 'Siz 5,000,000 so'm yutdingiz! Mukofotni olish uchun ushbu raqamga qo'ng'iroq qiling: +998 99 XXX XX XX'. Nima qilasiz?",
+    options: [
+      "Darhol qo'ng'iroq qilaman!",
+      "Avval qaysi kompaniya ekanligi tekshiraman",
+      "O'chiraman — bu 100% firibgarlik",
+      "Oilamga aytib maslahatlashaman"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🎯 To'g'ri! Bunday SMS lar — klassik scam. Hech qachon tanlov o'tkazmagan bo'lsangiz, yutolmaysiz! Qo'ng'iroq qilsangiz, pullik raqam bo'lib, hisobingizdan pul yechiladi yoki karta ma'lumotlaringizni so'rashadi.",
+      wrong: "Bu 100% firibgarlik! Ishtirok etmagan tanlovda yutish mumkin emas. Bunday raqamlarga qo'ng'iroq qilish pullik bo'lishi yoki ma'lumotlaringizni o'g'irlashga olib kelishi mumkin."
+    }
+  },
+  {
+    category: "IJTIMOIY TARMOQ XAVFSIZLIGI",
+    text: "Instagram'da ko'p obunachilik uchun: 'Bizning ilovani yuklab, login va parolingizni kiriting — 10,000 ta obunachilik beramiz' degan taklif bor. Nima qilasiz?",
+    options: [
+      "Yuklab ko'raman — obunachilik kerak!",
+      "Faqat login kiriting, parolsiz",
+      "Hech qachon! Bu akkauntni o'g'irlash usuli",
+      "Do'stim ham ishlatgan, xavfsiz"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🔐 To'g'ri! Uchinchi tomon ilovalariga Instagram login/parol berish — akkauntni topshirish bilan barobar. Ular sizning nomingizdan spam tarqatadi, akkauntni sotadi yoki qoralovchi ma'lumot izlaydi!",
+      wrong: "Bu akkauntingizni o'g'irlash usuli! Hech qachon login va parolingizni uchinchi tomon ilovalariga bermang. Haqiqiy Instagram faqat o'z ilovasi orqali ishlaydi."
+    }
+  },
+  {
+    category: "IJTIMOIY TARMOQ XAVFSIZLIGI",
+    text: "Tanish bo'lmagan odam Instagram'da do'stlik so'radi, keyin romantik munosabat boshladi va bir oydan so'ng 'favqulodda holat' uchun pul so'radi. Bu nima?",
+    options: [
+      "Haqiqiy sevgi — yordam beraman",
+      "'Romance scam' — romantik firibgarlik",
+      "Shunchaki qiyin ahvolga tushib qolgan",
+      "Pul qarzga beraman, keyin qaytaradi"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "💔 To'g'ri! Bu 'Romance scam' — dunyoda eng ko'p tarqalgan firibgarlik turlaridan biri. Firibgarlar haftalar, hatto oylar davomida ishonch qozonadi, keyin pul so'raydi. Hech qachon internetda tanishgan notanish odamga pul yuborma!",
+      wrong: "Bu 'Romance scam' — romantik firibgarlik! Firibgarlar ataylab his-tuyg'ularingizni boshqarib, pul oladi. Internetda tanishgan va hech ko'rishilmagan odamga HECH QACHON pul yuborma!"
+    }
+  },
+  {
+    category: "VIRUS VA ZARARLI DASTURLAR",
+    text: "Kompyuteringizda to'satdan oyna ochildi: '⚠️ Viruslar aniqlandi! Hozir tozalash uchun bu raqamga qo'ng'iroq qiling yoki dastur yuklab oling!' Nima qilasiz?",
+    options: [
+      "Ko'rsatilgan raqamga qo'ng'iroq qilaman",
+      "Dasturni yuklab, o'rnataman",
+      "Oynani yopaman — bu 'scareware' firibgarlik",
+      "Barcha fayllarni o'chiraman"
+    ],
+    correct: 2,
+    feedback: {
+      correct: "🛡️ To'g'ri! Bu 'Scareware' — qo'rqitib pul yoki ma'lumot olish usuli. Haqiqiy antivirus dasturlari hech qachon qo'ng'iroq raqami ko'rsatmaydi. Oynani yoping (Alt+F4), keyin haqiqiy antivirus tekshiruvi o'tkazing.",
+      wrong: "Bu 'Scareware'! Kompyuteringizda virus yo'q — bu oyna o'zi virus yoki firibgarlik. Raqamga qo'ng'iroq qilsangiz, pul to'latasiz. Dastur yuklasangiz — haqiqiy virus kiritasiz!"
+    }
+  },
+  {
+    category: "VIRUS VA ZARARLI DASTURLAR",
+    text: "Do'stingiz Telegram orqali fayl yubordi: 'Buni yuklab ol, juda zo'r o'yin!' — lekin fayl nomi 'game_setup.exe.pdf' ko'rinadi. Nima qilasiz?",
+    options: [
+      "Yuklab ochaman — do'stim yuborgan",
+      "Avval do'stimga qo'ng'iroq qilib, haqiqatligini tekshiraman",
+      "Faylni yuklayman lekin ochmayman",
+      "Barchaga ham yuboraman"
+    ],
+    correct: 1,
+    feedback: {
+      correct: "✅ To'g'ri! '.exe.pdf' kabi ikki kengaytmali fayllar — zararli dastur belgisi. Do'stingiz akkauntini o'g'irlashgan bo'lishi mumkin. Har doim qo'ng'iroq qilib tasdiqlang. Hech qachon noma'lum fayllarni ochmang!",
+      wrong: "Xavfli! 'game_setup.exe.pdf' — bu zararli dastur (troyan). Do'stingiz akkauntini xakerlar boshqarayotgan bo'lishi mumkin. Bunday fayllarni HECH QACHON ochmang — avval qo'ng'iroq qilib tekshiring!"
+    }
+  }
+];
+
+let currentQuestion = 0;
+let score = 0;
+let numCorrect = 0;
+let numWrong = 0;
+let answered = false;
+
+// Create particles
+function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 15; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.setProperty('--drift', (Math.random() * 100 - 50) + 'px');
+    if (Math.random() > 0.7) {
+      p.style.background = '#00cfff';
+      p.style.boxShadow = '0 0 6px #00cfff';
+    } else {
+      p.style.boxShadow = '0 0 6px #00ff9d';
+    }
+    container.appendChild(p);
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function startGame() {
+  currentQuestion = 0;
+  score = 0;
+  numCorrect = 0;
+  numWrong = 0;
+  showScreen('game');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[currentQuestion];
+  answered = false;
+
+  document.getElementById('q-counter').textContent = (currentQuestion + 1) + '/' + questions.length;
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('correct-display').textContent = numCorrect;
+  document.getElementById('wrong-display').textContent = numWrong;
+
+  const pct = (currentQuestion / questions.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  // Extra content (email, etc.)
+  const extraEl = document.getElementById('q-extra');
+  if (q.extra && q.extra.type === 'email') {
+    extraEl.innerHTML = `
+      <div class="email-box">
+        <div class="email-header">
+          <div class="email-field"><span class="email-label">KIM: </span><span class="email-suspicious">${q.extra.from}</span></div>
+          <div class="email-field"><span class="email-label">MAVZU: </span><span class="email-value">${q.extra.subject}</span></div>
+        </div>
+        <div class="email-body">${q.extra.body.replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+  } else {
+    extraEl.innerHTML = '';
+  }
+
+  // Options
+  const letters = ['A', 'B', 'C', 'D'];
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    container.appendChild(btn);
+  });
+
+  // Hide feedback and next button
+  const fb = document.getElementById('feedback-box');
+  fb.className = 'feedback-box';
+  document.getElementById('next-btn-wrap').style.display = 'none';
+}
+
+function selectAnswer(index) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(btn => btn.disabled = true);
+
+  const isCorrect = index === q.correct;
+
+  if (isCorrect) {
+    buttons[index].classList.add('correct');
+    score += 10;
+    numCorrect++;
+  } else {
+    buttons[index].classList.add('wrong');
+    buttons[q.correct].classList.add('correct');
+    numWrong++;
+  }
+
+  // Update stats
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('correct-display').textContent = numCorrect;
+  document.getElementById('wrong-display').textContent = numWrong;
+
+  // Show feedback
+  const fb = document.getElementById('feedback-box');
+  const ftitle = document.getElementById('feedback-title');
+  const ftext = document.getElementById('feedback-text');
+
+  if (isCorrect) {
+    fb.className = 'feedback-box correct show';
+    ftitle.innerHTML = '✅ TO\'G\'RI JAVOB! +10 ball';
+    ftext.textContent = q.feedback.correct;
+  } else {
+    fb.className = 'feedback-box wrong show';
+    ftitle.innerHTML = '❌ XATO JAVOB!';
+    ftext.textContent = q.feedback.wrong;
+  }
+
+  document.getElementById('next-btn-wrap').style.display = 'flex';
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion >= questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  showScreen('result');
+
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('rb-correct').textContent = numCorrect;
+  document.getElementById('rb-wrong').textContent = numWrong;
+  document.getElementById('rb-score').textContent = score;
+  document.getElementById('result-score').textContent = score + ' BALL';
+
+  const pct = (numCorrect / questions.length) * 100;
+  let badge, title, color;
+
+  if (pct >= 90) {
+    badge = '🏆'; title = 'KIBERXAVFSIZLIK MUTAXASSISI!';
+    color = '#00ff9d';
+  } else if (pct >= 70) {
+    badge = '🛡️'; title = 'YAXSHI HIMOYACHI!';
+    color = '#00cfff';
+  } else if (pct >= 50) {
+    badge = '⚔️'; title = 'O\'RGANUVCHI QAHRAMON';
+    color = '#ffbe00';
+  } else {
+    badge = '📚'; title = 'KO\'PROQ O\'RGANISH KERAK';
+    color = '#ff9966';
+  }
+
+  document.getElementById('result-badge').textContent = badge;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-title').style.color = color;
+  document.getElementById('result-score').style.color = color;
+}
+
+function restartGame() {
+  startGame();
+}
+
+function shareResult() {
+  const text = `🛡️ CyberQahramon o'yinida ${score} ball to'pladim! (${numCorrect}/${questions.length} to'g'ri javob)\n\nSen ham kiberxavfsizlikni bilasanmi? 👇`;
+  if (navigator.share) {
+    navigator.share({ text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => alert('Natija nusxalandi! Do\'stlaringizga yuboring 📤'));
+  }
+}
+
+// Init
+createParticles();
+</script>
+</body>
+</html>
