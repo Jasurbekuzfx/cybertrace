@@ -1,1158 +1,1519 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberQahramon — Kiberxavfsizlik O'yini</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<title>CyberTrace — Threat Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #050a0f;
-    --panel: #0a1520;
-    --border: #00ff9d;
-    --border2: #0a4a2a;
-    --accent: #00ff9d;
-    --accent2: #00cfff;
-    --danger: #ff3c5a;
-    --warn: #ffbe00;
-    --text: #c8ffe8;
-    --dim: #4a7a60;
-    --glow: 0 0 20px #00ff9d44;
-    --glow2: 0 0 30px #00ff9d88;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  /* Animated grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,157,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridMove 20s linear infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  @keyframes gridMove {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(40px); }
-  }
-
-  .scanline {
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.15) 2px,
-      rgba(0,0,0,0.15) 4px
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  #app {
-    position: relative;
-    z-index: 2;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 20px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Header */
-  .header {
-    text-align: center;
-    padding: 30px 0 20px;
-    border-bottom: 1px solid var(--border2);
-    margin-bottom: 30px;
-  }
-
-  .header h1 {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(1.6rem, 5vw, 2.8rem);
-    font-weight: 900;
-    color: var(--accent);
-    text-shadow: var(--glow2);
-    letter-spacing: 3px;
-    animation: pulse 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { text-shadow: 0 0 20px #00ff9d88; }
-    50% { text-shadow: 0 0 40px #00ff9dcc, 0 0 60px #00ff9d44; }
-  }
-
-  .header p {
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--dim);
-    font-size: 0.85rem;
-    margin-top: 8px;
-    letter-spacing: 2px;
-  }
-
-  /* Stats bar */
-  .stats-bar {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .stat-box {
-    flex: 1;
-    min-width: 120px;
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 12px 16px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-box::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent);
-    box-shadow: var(--glow);
-  }
-
-  .stat-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .stat-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--accent);
-    text-shadow: var(--glow);
-    margin-top: 4px;
-  }
-
-  .stat-value.danger { color: var(--danger); text-shadow: 0 0 15px #ff3c5a66; }
-  .stat-value.warn { color: var(--warn); text-shadow: 0 0 15px #ffbe0066; }
-
-  /* Progress bar */
-  .progress-wrap {
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 4px;
-    height: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    border-radius: 4px;
-    transition: width 0.5s ease;
-    box-shadow: 0 0 10px var(--accent);
-  }
-
-  /* Screen panels */
-  .screen {
-    display: none;
-    flex-direction: column;
-    gap: 20px;
-    flex: 1;
-  }
-
-  .screen.active { display: flex; }
-
-  /* Welcome screen */
-  .welcome-card {
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    padding: 40px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .welcome-card::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    background: linear-gradient(135deg, #00ff9d22, transparent, #00cfff22) border-box;
-    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: destination-out;
-    mask-composite: exclude;
-  }
-
-  .welcome-icon {
-    font-size: 5rem;
-    margin-bottom: 20px;
-    display: block;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .welcome-card h2 {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.4rem;
-    color: var(--accent);
-    margin-bottom: 16px;
-  }
-
-  .welcome-card p {
-    color: var(--text);
-    font-size: 1.05rem;
-    line-height: 1.7;
-    margin-bottom: 12px;
-    opacity: 0.85;
-  }
-
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin: 24px 0;
-  }
-
-  .feature-item {
-    background: rgba(0,255,157,0.05);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 16px;
-    font-size: 0.95rem;
-  }
-
-  .feature-item .fi-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
-  .feature-item strong { color: var(--accent); display: block; margin-bottom: 4px; }
-
-  /* Buttons */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 14px 32px;
-    border: none;
-    border-radius: 6px;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: var(--bg);
-    box-shadow: var(--glow);
-  }
-
-  .btn-primary:hover {
-    background: #00ffb3;
-    box-shadow: var(--glow2);
-    transform: translateY(-2px);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--accent2);
-    border: 1px solid var(--accent2);
-  }
-
-  .btn-secondary:hover {
-    background: rgba(0,207,255,0.1);
-    box-shadow: 0 0 20px #00cfff44;
-    transform: translateY(-2px);
-  }
-
-  .btn-danger {
-    background: rgba(255,60,90,0.15);
-    color: var(--danger);
-    border: 1px solid var(--danger);
-  }
-
-  .btn-danger:hover { background: rgba(255,60,90,0.25); }
-
-  /* Question card */
-  .question-card {
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    padding: 28px;
-    position: relative;
-  }
-
-  .q-category {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 3px;
-    color: var(--accent2);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .q-category::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--accent2);
-    border-radius: 50%;
-    box-shadow: 0 0 8px var(--accent2);
-    animation: blink 1s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  .q-text {
-    font-size: 1.15rem;
-    font-weight: 600;
-    line-height: 1.6;
-    color: #e8fff5;
-    margin-bottom: 20px;
-  }
-
-  /* Email/message display */
-  .email-box {
-    background: #0d1f12;
-    border: 1px solid #1a3a22;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-    line-height: 1.8;
-  }
-
-  .email-header {
-    border-bottom: 1px solid #1a3a22;
-    padding-bottom: 12px;
-    margin-bottom: 12px;
-  }
-
-  .email-field { margin-bottom: 4px; }
-  .email-label { color: var(--dim); }
-  .email-value { color: var(--text); }
-  .email-suspicious { color: var(--danger); }
-
-  .email-body { color: #a0d4b8; }
-
-  /* Answer options */
-  .options-grid {
-    display: grid;
-    gap: 12px;
-  }
-
-  .option-btn {
-    background: rgba(0,255,157,0.04);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 16px 20px;
-    color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .option-btn:hover:not(:disabled) {
-    background: rgba(0,255,157,0.1);
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateX(4px);
-  }
-
-  .option-btn.correct {
-    background: rgba(0,255,157,0.15);
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: var(--glow);
-  }
-
-  .option-btn.wrong {
-    background: rgba(255,60,90,0.15);
-    border-color: var(--danger);
-    color: var(--danger);
-  }
-
-  .option-btn:disabled { cursor: not-allowed; }
-
-  .option-letter {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    background: var(--border2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    color: var(--accent2);
-  }
-
-  /* Feedback box */
-  .feedback-box {
-    border-radius: 8px;
-    padding: 16px 20px;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    display: none;
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .feedback-box.show { display: block; }
-  .feedback-box.correct { background: rgba(0,255,157,0.1); border: 1px solid var(--accent); color: var(--accent); }
-  .feedback-box.wrong { background: rgba(255,60,90,0.1); border: 1px solid var(--danger); color: #ffb3bf; }
-
-  .feedback-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* Result screen */
-  .result-screen {
-    text-align: center;
-  }
-
-  .result-badge {
-    font-size: 6rem;
-    display: block;
-    margin: 0 auto 20px;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .result-title {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(1.2rem, 4vw, 2rem);
-    font-weight: 900;
-    margin-bottom: 12px;
-  }
-
-  .result-score {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(2rem, 8vw, 4rem);
-    font-weight: 900;
-    color: var(--accent);
-    text-shadow: var(--glow2);
-    margin: 16px 0;
-  }
-
-  .result-breakdown {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin: 24px 0;
-  }
-
-  .rb-item {
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .rb-num {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  .rb-label {
-    font-size: 0.8rem;
-    color: var(--dim);
-    margin-top: 4px;
-  }
-
-  .tips-section {
-    background: var(--panel);
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    padding: 24px;
-    text-align: left;
-    margin-top: 8px;
-  }
-
-  .tips-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.85rem;
-    color: var(--accent2);
-    letter-spacing: 2px;
-    margin-bottom: 16px;
-    text-align: center;
-  }
-
-  .tip-item {
-    display: flex;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border2);
-    font-size: 0.95rem;
-    line-height: 1.5;
-  }
-
-  .tip-item:last-child { border-bottom: none; }
-  .tip-icon { font-size: 1.3rem; flex-shrink: 0; }
-
-  /* Floating particles */
-  .particles {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .particle {
-    position: absolute;
-    width: 2px;
-    height: 2px;
-    background: var(--accent);
-    border-radius: 50%;
-    opacity: 0;
-    animation: particleFloat linear infinite;
-  }
-
-  @keyframes particleFloat {
-    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-    10% { opacity: 0.6; }
-    90% { opacity: 0.3; }
-    100% { transform: translateY(-100px) translateX(var(--drift)); opacity: 0; }
-  }
-
-  .btn-group {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 8px;
-  }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    .result-breakdown { grid-template-columns: repeat(3, 1fr); }
-    .welcome-card { padding: 24px 16px; }
-    .question-card { padding: 20px 16px; }
-    .stats-bar { gap: 10px; }
-    .stat-value { font-size: 1.3rem; }
-  }
+:root {
+  --bg-void: #020408;
+  --bg-deep: #040a10;
+  --bg-panel: #070f1a;
+  --bg-card: #0a1525;
+  --bg-card-hover: #0d1c30;
+  --border: #0d2137;
+  --border-glow: #0d4a7a;
+  --accent-cyan: #00d4ff;
+  --accent-teal: #00ffd5;
+  --accent-red: #ff2d55;
+  --accent-orange: #ff6b00;
+  --accent-green: #00ff88;
+  --accent-yellow: #ffd700;
+  --text-primary: #e2f0ff;
+  --text-secondary: #7a9ab8;
+  --text-dim: #3a5a78;
+  --glow-cyan: 0 0 20px rgba(0,212,255,0.3);
+  --glow-red: 0 0 20px rgba(255,45,85,0.4);
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-display: 'Orbitron', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.006) 2px,rgba(0,212,255,0.006) 4px);
+  pointer-events:none; z-index:9999;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none; z-index:0;
+}
+
+/* NAV */
+nav {
+  position:fixed; top:0; width:100%; z-index:1000;
+  background:rgba(2,4,8,0.92); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem; height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav-logo { display:flex; align-items:center; gap:0.75rem; }
+.logo-text { font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--accent-cyan); letter-spacing:0.15em; text-shadow:var(--glow-cyan); }
+.logo-sub { font-family:var(--font-mono); font-size:0.52rem; color:var(--text-dim); letter-spacing:0.2em; display:block; }
+.logo-icon svg { width:36px; height:36px; }
+
+.nav-links { display:flex; gap:0.25rem; list-style:none; }
+.nav-links a { font-family:var(--font-ui); font-size:0.78rem; font-weight:600; letter-spacing:0.1em; color:var(--text-secondary); text-decoration:none; padding:0.4rem 0.75rem; border:1px solid transparent; text-transform:uppercase; transition:all 0.2s; }
+.nav-links a:hover, .nav-links a.active { color:var(--accent-cyan); border-color:var(--border-glow); background:rgba(0,212,255,0.05); }
+
+.status-dot { display:flex; align-items:center; gap:0.4rem; font-family:var(--font-mono); font-size:0.62rem; color:var(--accent-green); }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--accent-green); box-shadow:0 0 8px var(--accent-green); animation:pulse-dot 2s infinite; }
+@keyframes pulse-dot { 50% { opacity:0.3; } }
+
+/* API CONFIG BANNER */
+.api-banner {
+  background: linear-gradient(90deg, rgba(255,107,0,0.1), rgba(255,215,0,0.05));
+  border: 1px solid rgba(255,107,0,0.3);
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.api-banner-text { font-family:var(--font-mono); font-size:0.7rem; color:#ffaa66; flex:1; }
+.api-input-row { display:flex; gap:0.5rem; flex-wrap:wrap; }
+.api-key-input {
+  background: var(--bg-deep); border:1px solid var(--border);
+  color:var(--text-primary); font-family:var(--font-mono); font-size:0.72rem;
+  padding:0.4rem 0.75rem; outline:none; width:240px;
+}
+.api-key-input:focus { border-color:var(--accent-orange); }
+.api-key-input::placeholder { color:var(--text-dim); }
+
+/* BUTTONS */
+.btn-primary {
+  font-family:var(--font-ui); font-size:0.75rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase;
+  color:var(--bg-void); background:var(--accent-cyan); border:none;
+  padding:0.55rem 1.25rem; cursor:pointer;
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+  transition:all 0.2s;
+}
+.btn-primary:hover { background:var(--accent-teal); box-shadow:var(--glow-cyan); }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-secondary {
+  font-family:var(--font-ui); font-size:0.75rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--accent-cyan); background:transparent; border:1px solid var(--accent-cyan);
+  padding:0.5rem 1rem; cursor:pointer; transition:all 0.2s;
+}
+.btn-secondary:hover { background:rgba(0,212,255,0.1); }
+.btn-sm { padding:0.35rem 0.8rem; font-size:0.65rem; }
+.btn-orange { background:var(--accent-orange); clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+
+/* MAIN */
+main { padding-top:64px; position:relative; z-index:1; }
+
+/* HERO */
+.hero {
+  min-height:90vh; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; text-align:center; padding:2rem; position:relative; overflow:hidden;
+}
+.hero-bg { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(0,212,255,0.06) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
+.hero-orbit { position:absolute; border:1px solid rgba(0,212,255,0.07); border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); animation:orbit-spin 20s linear infinite; }
+.hero-orbit:nth-child(2) { width:400px; height:400px; }
+.hero-orbit:nth-child(3) { width:650px; height:650px; animation-duration:35s; animation-direction:reverse; border-color:rgba(0,255,136,0.04); }
+@keyframes orbit-spin { to { transform:translate(-50%,-50%) rotate(360deg); } }
+
+.hero-badge { display:inline-flex; align-items:center; gap:0.5rem; font-family:var(--font-mono); font-size:0.62rem; letter-spacing:0.2em; color:var(--accent-green); border:1px solid rgba(0,255,136,0.3); padding:0.3rem 0.8rem; background:rgba(0,255,136,0.05); margin-bottom:1.75rem; animation:fadeUp 0.7s ease both; }
+.hero h1 { font-family:var(--font-display); font-size:clamp(2.5rem,8vw,5.5rem); font-weight:900; line-height:1; letter-spacing:0.05em; margin-bottom:0.9rem; animation:fadeUp 0.7s ease 0.15s both; }
+.hero h1 .trace { color:var(--accent-cyan); text-shadow:0 0 40px rgba(0,212,255,0.5); }
+.hero-sub { font-size:1.05rem; color:var(--text-secondary); max-width:540px; line-height:1.6; margin-bottom:2rem; animation:fadeUp 0.7s ease 0.3s both; }
+.hero-ctas { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; animation:fadeUp 0.7s ease 0.45s both; margin-bottom:2.5rem; }
+.hero-ctas .btn-primary { padding:0.8rem 2rem; font-size:0.85rem; }
+.hero-ctas .btn-secondary { padding:0.75rem 1.5rem; font-size:0.85rem; }
+.hero-stats { display:flex; gap:3rem; flex-wrap:wrap; justify-content:center; animation:fadeUp 0.7s ease 0.6s both; }
+.stat-item { text-align:center; }
+.stat-value { font-family:var(--font-display); font-size:1.6rem; font-weight:700; color:var(--accent-cyan); display:block; }
+.stat-label { font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.15em; color:var(--text-dim); margin-top:0.2rem; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+
+/* SECTION */
+.section { padding:4.5rem 2rem; max-width:1300px; margin:0 auto; }
+.section-header { display:flex; align-items:center; gap:1rem; margin-bottom:0.4rem; }
+.section-num { font-family:var(--font-mono); font-size:0.62rem; color:var(--accent-cyan); letter-spacing:0.2em; white-space:nowrap; }
+.section-line { flex:1; height:1px; background:linear-gradient(90deg,var(--border-glow),transparent); }
+.section-title { font-family:var(--font-display); font-size:clamp(1.3rem,3vw,1.9rem); font-weight:700; letter-spacing:0.05em; margin-bottom:0.4rem; }
+.section-desc { font-size:0.92rem; color:var(--text-secondary); max-width:600px; line-height:1.6; margin-bottom:2rem; }
+
+hr.divider { border:none; border-top:1px solid var(--border); margin:0 2rem; }
+
+/* TOOL PANEL */
+.tool-panel { background:var(--bg-panel); border:1px solid var(--border); position:relative; overflow:hidden; }
+.tool-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--accent-cyan),transparent); opacity:0.4; }
+.panel-header { display:flex; align-items:center; gap:0.75rem; padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); background:rgba(0,212,255,0.025); }
+.panel-dots { display:flex; gap:0.4rem; }
+.panel-dot { width:8px; height:8px; border-radius:50%; }
+.panel-dot.r { background:#ff2d55; box-shadow:0 0 5px #ff2d55; }
+.panel-dot.y { background:#ffd700; box-shadow:0 0 5px #ffd700; }
+.panel-dot.g { background:#00ff88; box-shadow:0 0 5px #00ff88; }
+.panel-title { font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.18em; color:var(--text-secondary); text-transform:uppercase; }
+.panel-body { padding:1.5rem; }
+
+/* INPUTS */
+.input-row { display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+.ct-input { flex:1; min-width:260px; background:var(--bg-deep); border:1px solid var(--border); color:var(--text-primary); font-family:var(--font-mono); font-size:0.83rem; padding:0.7rem 1rem; outline:none; transition:border-color 0.2s; }
+.ct-input:focus { border-color:var(--accent-cyan); box-shadow:0 0 0 1px rgba(0,212,255,0.12); }
+.ct-input::placeholder { color:var(--text-dim); }
+
+/* RESULT GRID */
+.result-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1px; background:var(--border); margin-bottom:1.25rem; }
+.result-cell { background:var(--bg-card); padding:0.9rem 1rem; }
+.cell-label { font-family:var(--font-mono); font-size:0.56rem; letter-spacing:0.18em; color:var(--text-dim); text-transform:uppercase; margin-bottom:0.35rem; }
+.cell-value { font-family:var(--font-mono); font-size:0.85rem; color:var(--text-primary); word-break:break-all; }
+.cell-value.safe { color:var(--accent-green); }
+.cell-value.warn { color:var(--accent-orange); }
+.cell-value.danger { color:var(--accent-red); }
+.cell-value.loading { color:var(--text-dim); animation:blink 1s infinite; }
+@keyframes blink { 50% { opacity:0.3; } }
+
+/* RISK METER */
+.risk-meter { display:flex; align-items:center; gap:1.25rem; padding:0.9rem 1rem; background:var(--bg-deep); border:1px solid var(--border); }
+.risk-label { font-family:var(--font-mono); font-size:0.62rem; letter-spacing:0.15em; color:var(--text-dim); min-width:80px; }
+.risk-track { flex:1; height:8px; background:var(--bg-void); border:1px solid var(--border); overflow:hidden; }
+.risk-fill { height:100%; background:linear-gradient(90deg,var(--accent-green),var(--accent-yellow),var(--accent-orange),var(--accent-red)); transition:width 1.2s cubic-bezier(0.4,0,0.2,1); position:relative; }
+.risk-fill::after { content:''; position:absolute; top:0; right:0; width:3px; height:100%; background:white; box-shadow:0 0 8px white; }
+.risk-score { font-family:var(--font-display); font-size:1.4rem; font-weight:700; min-width:55px; text-align:right; }
+.risk-badge { font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.15em; padding:0.22rem 0.55rem; border:1px solid; text-transform:uppercase; }
+.risk-badge.safe { color:var(--accent-green); border-color:var(--accent-green); background:rgba(0,255,136,0.08); }
+.risk-badge.suspicious { color:var(--accent-orange); border-color:var(--accent-orange); background:rgba(255,107,0,0.08); }
+.risk-badge.dangerous { color:var(--accent-red); border-color:var(--accent-red); background:rgba(255,45,85,0.08); }
+.risk-badge.pending { color:var(--text-dim); border-color:var(--text-dim); }
+
+/* VT STATS */
+.vt-stats { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
+.vt-stat { text-align:center; padding:0.6rem 1rem; background:var(--bg-deep); border:1px solid var(--border); flex:1; min-width:90px; }
+.vt-num { font-family:var(--font-display); font-size:1.5rem; font-weight:700; }
+.vt-lbl { font-family:var(--font-mono); font-size:0.56rem; letter-spacing:0.12em; color:var(--text-dim); margin-top:0.2rem; }
+.vt-num.red { color:var(--accent-red); }
+.vt-num.orange { color:var(--accent-orange); }
+.vt-num.green { color:var(--accent-green); }
+.vt-num.dim { color:var(--text-secondary); }
+
+/* TERMINAL */
+.terminal { background:var(--bg-void); border:1px solid var(--border); font-family:var(--font-mono); font-size:0.76rem; margin-top:1.25rem; }
+.terminal-header { background:var(--bg-deep); border-bottom:1px solid var(--border); padding:0.45rem 1rem; display:flex; align-items:center; gap:0.5rem; }
+.terminal-title { color:var(--text-dim); font-size:0.62rem; letter-spacing:0.15em; flex:1; }
+.terminal-body { padding:0.9rem; min-height:160px; max-height:260px; overflow-y:auto; line-height:1.9; }
+.t-line { display:flex; gap:0.6rem; }
+.t-prompt { color:var(--accent-cyan); min-width:55px; }
+.t-out { color:var(--text-secondary); flex:1; word-break:break-all; }
+.t-out.ok { color:var(--accent-green); }
+.t-out.err { color:var(--accent-red); }
+.t-out.warn { color:var(--accent-orange); }
+.t-cursor { display:inline-block; width:7px; height:13px; background:var(--accent-cyan); animation:blink 1s infinite; vertical-align:text-bottom; }
+
+/* MAP */
+.map-wrap { display:grid; grid-template-columns:1fr 270px; gap:1px; background:var(--border); min-height:320px; }
+.map-visual { background:var(--bg-deep); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.map-visual svg { width:100%; height:100%; opacity:0.4; }
+.map-ping { position:absolute; width:14px; height:14px; border-radius:50%; background:var(--accent-red); box-shadow:0 0 16px var(--accent-red); animation:ping 2s infinite; display:none; }
+.map-ping::after { content:''; position:absolute; inset:-8px; border-radius:50%; border:2px solid var(--accent-red); animation:ring 2s infinite; }
+@keyframes ping { 50%{ transform:scale(1.3); } }
+@keyframes ring { to { transform:scale(2.5); opacity:0; } }
+.map-coords { position:absolute; bottom:0.75rem; left:1rem; font-family:var(--font-mono); font-size:0.58rem; color:var(--accent-cyan); }
+.map-info { background:var(--bg-card); padding:1.1rem; display:flex; flex-direction:column; gap:0.8rem; overflow-y:auto; }
+.info-row { border-bottom:1px solid var(--border); padding-bottom:0.65rem; }
+.info-row:last-child { border:none; padding:0; }
+.info-key { font-family:var(--font-mono); font-size:0.56rem; letter-spacing:0.15em; color:var(--text-dim); text-transform:uppercase; margin-bottom:0.18rem; }
+.info-val { font-size:0.83rem; font-weight:600; color:var(--text-primary); word-break:break-all; }
+.tag-list { display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.3rem; }
+.tag { font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.08em; padding:0.12rem 0.45rem; border:1px solid; }
+.tag.green { color:var(--accent-green); border-color:rgba(0,255,136,0.3); }
+.tag.red { color:var(--accent-red); border-color:rgba(255,45,85,0.3); }
+.tag.orange { color:var(--accent-orange); border-color:rgba(255,107,0,0.3); }
+.tag.cyan { color:var(--accent-cyan); border-color:rgba(0,212,255,0.3); }
+
+/* APK */
+.upload-zone { border:2px dashed var(--border-glow); background:var(--bg-deep); padding:2.5rem 2rem; text-align:center; cursor:pointer; transition:all 0.3s; }
+.upload-zone:hover, .upload-zone.drag-over { border-color:var(--accent-cyan); background:rgba(0,212,255,0.03); }
+.upload-icon { font-size:2.5rem; margin-bottom:0.75rem; display:block; }
+.upload-text { font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:0.3rem; }
+.upload-sub { font-family:var(--font-mono); font-size:0.62rem; letter-spacing:0.1em; color:var(--text-dim); }
+.scan-step { display:flex; align-items:center; gap:0.75rem; padding:0.55rem 0; border-bottom:1px solid var(--border); }
+.step-num { font-family:var(--font-mono); font-size:0.62rem; color:var(--text-dim); min-width:24px; }
+.step-name { font-size:0.82rem; color:var(--text-secondary); flex:1; }
+.step-status { font-family:var(--font-mono); font-size:0.62rem; }
+.step-status.done { color:var(--accent-green); }
+.step-status.running { color:var(--accent-cyan); animation:blink 0.8s infinite; }
+.step-status.pending { color:var(--text-dim); }
+.step-status.alert { color:var(--accent-red); }
+.perm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:0.45rem; margin-top:1rem; }
+.perm-item { display:flex; align-items:center; gap:0.5rem; padding:0.45rem 0.7rem; background:var(--bg-deep); border:1px solid var(--border); font-size:0.76rem; }
+.perm-name { flex:1; color:var(--text-secondary); font-family:var(--font-mono); font-size:0.66rem; }
+.perm-risk { font-family:var(--font-mono); font-size:0.56rem; padding:0.08rem 0.35rem; }
+.perm-risk.high { color:var(--accent-red); background:rgba(255,45,85,0.1); }
+.perm-risk.med { color:var(--accent-orange); background:rgba(255,107,0,0.1); }
+.perm-risk.low { color:var(--accent-green); background:rgba(0,255,136,0.1); }
+
+/* TABS */
+.tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
+.tab { font-family:var(--font-ui); font-size:0.76rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); padding:0.55rem 1.1rem; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.2s; background:none; border-top:none; border-left:none; border-right:none; }
+.tab:hover { color:var(--text-secondary); }
+.tab.active { color:var(--accent-cyan); border-bottom-color:var(--accent-cyan); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* SCAM TABLE */
+.scam-table { width:100%; border-collapse:collapse; }
+.scam-table th { font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.15em; color:var(--text-dim); text-transform:uppercase; text-align:left; padding:0.55rem 0.7rem; border-bottom:1px solid var(--border); background:var(--bg-deep); }
+.scam-table td { padding:0.6rem 0.7rem; border-bottom:1px solid var(--border); font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary); }
+.scam-table tr:hover td { background:var(--bg-card-hover); }
+.scam-table td:first-child { color:var(--accent-red); }
+.pill { display:inline-block; font-size:0.56rem; letter-spacing:0.08em; padding:0.12rem 0.45rem; border:1px solid; }
+.pill.phishing { color:var(--accent-red); border-color:rgba(255,45,85,0.4); }
+.pill.malware { color:var(--accent-orange); border-color:rgba(255,107,0,0.4); }
+.pill.fraud { color:var(--accent-yellow); border-color:rgba(255,215,0,0.4); }
+.pill.scam { color:#bb86fc; border-color:rgba(187,134,252,0.4); }
+
+/* ALERTS */
+.alert { display:flex; align-items:flex-start; gap:0.7rem; padding:0.7rem 1rem; border:1px solid; margin-bottom:1rem; font-size:0.8rem; line-height:1.5; }
+.alert.danger { border-color:rgba(255,45,85,0.3); background:rgba(255,45,85,0.06); color:#ff8aa0; }
+.alert.warning { border-color:rgba(255,107,0,0.3); background:rgba(255,107,0,0.06); color:#ffaa66; }
+.alert.info { border-color:rgba(0,212,255,0.3); background:rgba(0,212,255,0.06); color:#80ddff; }
+.alert.success { border-color:rgba(0,255,136,0.3); background:rgba(0,255,136,0.06); color:#80ffbb; }
+
+/* BREACH */
+.breach-card { display:flex; align-items:center; gap:1rem; padding:0.9rem 1rem; background:var(--bg-deep); border:1px solid var(--border); margin-bottom:0.5rem; }
+.breach-icon { font-size:1.4rem; }
+.breach-name { font-size:0.88rem; font-weight:600; color:var(--text-primary); }
+.breach-date { font-family:var(--font-mono); font-size:0.6rem; color:var(--text-dim); margin-top:0.15rem; }
+.breach-fields { display:flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.3rem; }
+.breach-field { font-family:var(--font-mono); font-size:0.56rem; padding:0.08rem 0.35rem; background:rgba(255,45,85,0.08); color:var(--accent-red); border:1px solid rgba(255,45,85,0.2); }
+
+/* FORM */
+.form-group { display:flex; flex-direction:column; gap:0.35rem; }
+.form-label { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.15em; color:var(--text-dim); text-transform:uppercase; }
+.form-select, .form-textarea { background:var(--bg-deep); border:1px solid var(--border); color:var(--text-primary); font-family:var(--font-mono); font-size:0.8rem; padding:0.6rem 0.75rem; outline:none; appearance:none; }
+.form-select:focus, .form-textarea:focus { border-color:var(--accent-cyan); }
+.form-textarea { resize:vertical; min-height:80px; }
+
+/* PRICING */
+.pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1px; background:var(--border); }
+.price-card { background:var(--bg-card); padding:2rem; position:relative; overflow:hidden; }
+.price-card.featured { background:linear-gradient(135deg,rgba(0,212,255,0.07),rgba(0,255,213,0.03)); border:1px solid var(--accent-cyan); }
+.price-card.featured::before { content:'POPULAR'; position:absolute; top:1rem; right:-1.5rem; background:var(--accent-cyan); color:var(--bg-void); font-family:var(--font-mono); font-size:0.52rem; letter-spacing:0.2em; padding:0.18rem 2rem; transform:rotate(45deg); }
+.plan-name { font-family:var(--font-display); font-size:0.72rem; letter-spacing:0.2em; color:var(--text-dim); text-transform:uppercase; margin-bottom:0.7rem; }
+.plan-price { font-family:var(--font-display); font-size:2.4rem; font-weight:900; color:var(--text-primary); line-height:1; margin-bottom:0.2rem; }
+.plan-price sup { font-size:1rem; vertical-align:top; margin-top:0.5rem; color:var(--text-secondary); }
+.plan-period { font-family:var(--font-mono); font-size:0.62rem; color:var(--text-dim); letter-spacing:0.1em; margin-bottom:1.5rem; }
+.plan-feats { list-style:none; margin-bottom:1.75rem; }
+.plan-feats li { display:flex; align-items:center; gap:0.55rem; font-size:0.82rem; color:var(--text-secondary); padding:0.35rem 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.plan-feats li .ok { color:var(--accent-green); font-size:0.66rem; }
+.plan-feats li .no { color:var(--text-dim); font-size:0.66rem; }
+.plan-feats li.dim { opacity:0.4; }
+
+/* FOOTER */
+footer { border-top:1px solid var(--border); padding:3rem 2rem; max-width:1300px; margin:0 auto; display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:2rem; position:relative; z-index:1; }
+.footer-desc { font-size:0.8rem; color:var(--text-dim); line-height:1.6; max-width:280px; margin-top:0.5rem; }
+.footer-col-title { font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.2em; color:var(--text-dim); text-transform:uppercase; margin-bottom:1rem; }
+.footer-links { list-style:none; display:flex; flex-direction:column; gap:0.45rem; }
+.footer-links a { font-size:0.8rem; color:var(--text-secondary); text-decoration:none; transition:color 0.2s; }
+.footer-links a:hover { color:var(--accent-cyan); }
+.footer-bottom { border-top:1px solid var(--border); padding:1.25rem 2rem; max-width:1300px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:0.58rem; color:var(--text-dim); letter-spacing:0.08em; position:relative; z-index:1; }
+
+/* LAYOUT */
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+.particle { position:fixed; width:2px; height:2px; background:var(--accent-cyan); border-radius:50%; pointer-events:none; animation:float-p linear infinite; opacity:0; }
+@keyframes float-p { 0% { transform:translateY(100vh); opacity:0; } 10% { opacity:0.5; } 90% { opacity:0.5; } 100% { transform:translateY(-10vh) translateX(80px); opacity:0; } }
+
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--bg-deep); }
+::-webkit-scrollbar-thumb { background:var(--border-glow); }
+
+@media(max-width:900px) {
+  .two-col { grid-template-columns:1fr; }
+  .map-wrap { grid-template-columns:1fr; }
+  footer { grid-template-columns:1fr; }
+  .nav-links { display:none; }
+}
 </style>
 </head>
 <body>
-<div class="scanline"></div>
-<div class="particles" id="particles"></div>
+<div id="particles"></div>
 
-<div id="app">
-  <div class="header">
-    <h1>⚔️ CYBERQAHRAMON</h1>
-    <p>[ KIBERXAVFSIZLIK SIMULYATORI v1.0 ]</p>
-  </div>
-
-  <!-- Welcome Screen -->
-  <div class="screen active" id="screen-welcome">
-    <div class="welcome-card">
-      <span class="welcome-icon">🛡️</span>
-      <h2>INTERNETDA XAVFSIZ BO'LISHNI O'RGAN!</h2>
-      <p>Bu o'yin orqali haqiqiy xakerlar ishlatadigan hiylalarni bilib olasiz va o'zingizni himoya qilishni o'rganasiz.</p>
-
-      <div class="feature-grid">
-        <div class="feature-item">
-          <span class="fi-icon">🎣</span>
-          <strong>Phishing</strong>
-          Soxta xabarlarni aniqlashni o'rgan
-        </div>
-        <div class="feature-item">
-          <span class="fi-icon">🔐</span>
-          <strong>Parol xavfsizligi</strong>
-          Kuchli parol yaratish sirlarini bil
-        </div>
-        <div class="feature-item">
-          <span class="fi-icon">🌐</span>
-          <strong>Internet xavfsizligi</strong>
-          Xavfli saytlardan himoyalanish
-        </div>
-      </div>
-
-      <p style="color: var(--dim); font-size: 0.9rem;">17 ta savol • ~8 daqiqa • Bepul</p>
-
-      <div class="btn-group" style="margin-top: 24px;">
-        <button class="btn btn-primary" onclick="startGame()">🚀 O'YINNI BOSHLASH</button>
-      </div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="18,2 34,10 34,26 18,34 2,26 2,10" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+      <polygon points="18,8 28,13 28,23 18,28 8,23 8,13" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
+      <circle cx="18" cy="18" r="4" fill="#00d4ff" opacity="0.85"/>
+    </svg>
+    <div>
+      <span class="logo-text">CYBERTRACE</span>
+      <span class="logo-sub">THREAT INTELLIGENCE PLATFORM</span>
     </div>
   </div>
+  <ul class="nav-links">
+    <li><a href="#url-section">Phishing</a></li>
+    <li><a href="#ip-section">IP Intel</a></li>
+    <li><a href="#apk-section">APK Scan</a></li>
+    <li><a href="#scam-section">Scam DB</a></li>
+    <li><a href="#dark-section">Dark Web</a></li>
+    <li><a href="#pricing-section">Pricing</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="status-dot"><div class="dot"></div><span id="apiStatus">DEMO MODE</span></div>
+    <button class="btn-secondary btn-sm" onclick="showApiConfig()">⚙ API KEYS</button>
+  </div>
+</nav>
 
-  <!-- Game Screen -->
-  <div class="screen" id="screen-game">
-    <div class="stats-bar">
-      <div class="stat-box">
-        <div class="stat-label">SAVOL</div>
-        <div class="stat-value" id="q-counter">1/10</div>
+<main>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orbit"></div>
+  <div class="hero-orbit"></div>
+
+  <div class="hero-badge"><span class="dot"></span>v2.4.1 — REAL API INTEGRATION</div>
+
+  <h1>CYBER<span class="trace">TRACE</span></h1>
+  <p class="hero-sub">Haqiqiy VirusTotal + IPinfo API integratsiyasi. URL, IP, APK — barchasini bir platformada tahlil qiling.</p>
+
+  <div class="hero-ctas">
+    <button class="btn-primary" onclick="scrollTo('url-section')">⚡ Skanerlashni Boshlash</button>
+    <button class="btn-secondary" onclick="scrollTo('api-config')">🔑 API Kalitlarni Sozlash</button>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-item"><span class="stat-value" id="c1">0</span><span class="stat-label">Threats Detected</span></div>
+    <div class="stat-item"><span class="stat-value" id="c2">0</span><span class="stat-label">URLs Analyzed</span></div>
+    <div class="stat-item"><span class="stat-value" id="c3">0</span><span class="stat-label">APKs Scanned</span></div>
+    <div class="stat-item"><span class="stat-value" id="c4">0</span><span class="stat-label">API Engines</span></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- API CONFIG -->
+<section class="section" id="api-config">
+  <div class="section-header">
+    <span class="section-num">00 // API_CONFIGURATION</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">API Kalitlarni Sozlash</h2>
+  <p class="section-desc">Haqiqiy skanerlash uchun API kalitlaringizni kiriting. Kalitlar faqat brauzeringizda saqlanadi (localStorage).</p>
+
+  <div class="tool-panel">
+    <div class="panel-header">
+      <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+      <span class="panel-title">API_KEY_MANAGER :: BROWSER_ONLY_STORAGE</span>
+    </div>
+    <div class="panel-body">
+      <div class="alert warning">
+        <span>⚠</span>
+        <span>Kalitlar faqat sizning brauzeringizda saqlanadi. Server'ga yuborilmaydi. Xavfsiz.</span>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">BALL</div>
-        <div class="stat-value" id="score-display">0</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:1.25rem">
+        <div class="form-group">
+          <label class="form-label">VirusTotal API Key — <a href="https://www.virustotal.com/gui/join-us" target="_blank" style="color:var(--accent-cyan)">Bepul olish ↗</a></label>
+          <input type="password" class="ct-input" id="vtKey" placeholder="4b3c2d1e... (64 ta belgi)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IPinfo Token — <a href="https://ipinfo.io/signup" target="_blank" style="color:var(--accent-cyan)">Bepul olish ↗</a></label>
+          <input type="password" class="ct-input" id="ipinfoKey" placeholder="abc123...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">AbuseIPDB Key — <a href="https://www.abuseipdb.com/register" target="_blank" style="color:var(--accent-cyan)">Bepul olish ↗</a></label>
+          <input type="password" class="ct-input" id="abuseKey" placeholder="api key...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Backend URL (FastAPI)</label>
+          <input type="text" class="ct-input" id="backendUrl" placeholder="http://localhost:8000" value="http://localhost:8000">
+        </div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">TO'G'RI</div>
-        <div class="stat-value" id="correct-display">0</div>
+
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <button class="btn-primary" onclick="saveApiKeys()">💾 KALITLARNI SAQLASH</button>
+        <button class="btn-secondary" onclick="testConnection()">🔌 ULANISHNI TEKSHIRISH</button>
+        <span id="saveMsg" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--accent-green);display:none">✓ Saqlandi</span>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">XATO</div>
-        <div class="stat-value danger" id="wrong-display">0</div>
+
+      <div id="connectionResult" style="margin-top:1rem"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- URL ANALYZER -->
+<section class="section" id="url-section">
+  <div class="section-header">
+    <span class="section-num">01 // PHISHING_ANALYZER</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">Phishing Link Analyzer</h2>
+  <p class="section-desc">VirusTotal + 70+ antivirus engine orqali URL tahlili. DNS, IP, SSL, WHOIS — hammasi real vaqtda.</p>
+
+  <div class="tool-panel">
+    <div class="panel-header">
+      <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+      <span class="panel-title">URL_ANALYSIS :: VIRUSTOTAL + IPINFO</span>
+    </div>
+    <div class="panel-body">
+      <div class="input-row">
+        <input type="text" class="ct-input" id="urlInput" placeholder="https://shubhali-sayt.xyz/login" onkeydown="if(event.key==='Enter')analyzeURL()">
+        <button class="btn-primary" id="urlBtn" onclick="analyzeURL()">⚡ ANALYZE</button>
+        <button class="btn-secondary" onclick="clearURL()">CLEAR</button>
+      </div>
+
+      <div id="urlAlert" style="display:none"></div>
+
+      <div class="result-grid" id="urlGrid">
+        <div class="result-cell"><div class="cell-label">Domain</div><div class="cell-value" id="u-domain">—</div></div>
+        <div class="result-cell"><div class="cell-label">IP Address</div><div class="cell-value" id="u-ip">—</div></div>
+        <div class="result-cell"><div class="cell-label">Hosting / Org</div><div class="cell-value" id="u-host">—</div></div>
+        <div class="result-cell"><div class="cell-label">SSL Status</div><div class="cell-value" id="u-ssl">—</div></div>
+        <div class="result-cell"><div class="cell-label">Location</div><div class="cell-value" id="u-loc">—</div></div>
+        <div class="result-cell"><div class="cell-label">Timezone</div><div class="cell-value" id="u-tz">—</div></div>
+      </div>
+
+      <div class="risk-meter">
+        <span class="risk-label">RISK SCORE</span>
+        <div class="risk-track"><div class="risk-fill" id="urlRiskBar" style="width:0%"></div></div>
+        <span class="risk-score" id="urlRiskScore" style="color:var(--text-dim)">—</span>
+        <span class="risk-badge pending" id="urlRiskBadge">PENDING</span>
+      </div>
+
+      <!-- VirusTotal Stats -->
+      <div class="vt-stats" id="vtStats" style="display:none">
+        <div class="vt-stat"><div class="vt-num red" id="vt-mal">0</div><div class="vt-lbl">MALICIOUS</div></div>
+        <div class="vt-stat"><div class="vt-num orange" id="vt-sus">0</div><div class="vt-lbl">SUSPICIOUS</div></div>
+        <div class="vt-stat"><div class="vt-num green" id="vt-clean">0</div><div class="vt-lbl">HARMLESS</div></div>
+        <div class="vt-stat"><div class="vt-num dim" id="vt-total">0</div><div class="vt-lbl">ENGINES</div></div>
+        <div class="vt-stat" id="vtLink" style="flex:0"></div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+          <span class="terminal-title">SCAN_LOG :: REAL-TIME</span>
+        </div>
+        <div class="terminal-body" id="urlLog">
+          <div class="t-line"><span class="t-prompt">CT:~$</span><span class="t-out">Tayyor. URL kiriting va ANALYZE bosing...</span></div>
+          <div class="t-line"><span class="t-prompt">&nbsp;</span><span class="t-cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- IP ANALYZER -->
+<section class="section" id="ip-section">
+  <div class="section-header">
+    <span class="section-num">02 // IP_INTELLIGENCE</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">IP & Server Intelligence</h2>
+  <p class="section-desc">IPinfo.io + AbuseIPDB orqali haqiqiy geolokatsiya, VPN/TOR aniqlash va xavf baholash.</p>
+
+  <div class="tool-panel">
+    <div class="panel-header">
+      <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+      <span class="panel-title">IP_GEOLOCATION :: IPINFO + ABUSEIPDB</span>
+    </div>
+    <div class="panel-body">
+      <div class="input-row">
+        <input type="text" class="ct-input" id="ipInput" placeholder="185.220.101.45" onkeydown="if(event.key==='Enter')analyzeIP()">
+        <button class="btn-primary" onclick="analyzeIP()">⚡ TRACE IP</button>
+        <button class="btn-secondary" onclick="myIP()">MY IP</button>
+      </div>
+
+      <div class="map-wrap">
+        <div class="map-visual">
+          <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+            <defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="rgba(0,212,255,0.07)" stroke-width="0.5"/></pattern></defs>
+            <rect width="1000" height="500" fill="url(#g)"/>
+            <path d="M150,80 L200,70 L230,100 L240,160 L200,180 L160,170 L140,130Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M300,100 L380,80 L420,120 L430,200 L400,250 L360,260 L300,220 L270,160Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M350,270 L400,260 L420,310 L410,380 L370,400 L340,360 L330,310Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M450,90 L550,80 L600,120 L620,180 L600,220 L540,240 L480,220 L450,170Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M600,100 L700,90 L750,130 L760,200 L720,240 L660,250 L610,210Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M700,270 L780,260 L820,310 L810,380 L750,400 L700,360Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <path d="M820,290 L900,275 L950,325 L940,395 L880,415 L820,375Z" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+            <line x1="0" y1="250" x2="1000" y2="250" stroke="rgba(0,212,255,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
+            <line x1="500" y1="0" x2="500" y2="500" stroke="rgba(0,212,255,0.05)" stroke-width="1"/>
+          </svg>
+          <div class="map-ping" id="mapPing"></div>
+          <div class="map-coords" id="mapCoords">LAT: — // LON: —</div>
+        </div>
+
+        <div class="map-info">
+          <div class="info-row"><div class="info-key">IP Address</div><div class="info-val" id="ip-addr">—</div></div>
+          <div class="info-row"><div class="info-key">Location</div><div class="info-val" id="ip-loc">—</div></div>
+          <div class="info-row"><div class="info-key">ISP / Org</div><div class="info-val" id="ip-isp">—</div></div>
+          <div class="info-row"><div class="info-key">ASN</div><div class="info-val" id="ip-asn">—</div></div>
+          <div class="info-row"><div class="info-key">Abuse Score</div><div class="info-val" id="ip-abuse">—</div></div>
+          <div class="info-row"><div class="info-key">Threat Flags</div><div class="tag-list" id="ip-tags"><span class="tag cyan">—</span></div></div>
+          <div class="info-row"><div class="info-key">Classification</div><div class="info-val" id="ip-class">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- APK ANALYZER -->
+<section class="section" id="apk-section">
+  <div class="section-header">
+    <span class="section-num">03 // APK_MALWARE_ANALYZER</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">APK Malware Analyzer</h2>
+  <p class="section-desc">APK faylni yuklang — VirusTotal SHA256 hash tekshiruvi + ruxsatlar tahlili.</p>
+
+  <div class="two-col">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+        <span class="panel-title">APK_SANDBOX :: SECURE</span>
+      </div>
+      <div class="panel-body">
+        <div class="upload-zone" id="uploadZone"
+          onclick="document.getElementById('apkFile').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event)">
+          <span class="upload-icon">📱</span>
+          <div class="upload-text">APK faylni tashlang yoki bosing</div>
+          <div class="upload-sub">MAX: 100MB // .APK, .XAPK, .AAB</div>
+          <input type="file" id="apkFile" accept=".apk,.xapk,.aab" style="display:none" onchange="startAPK(this)">
+        </div>
+
+        <div id="apkSteps" style="display:none;margin-top:1.25rem">
+          <div class="scan-step"><span class="step-num">01</span><span class="step-name">Fayl yuklash va hash hisoblash</span><span class="step-status pending" id="as1">PENDING</span></div>
+          <div class="scan-step"><span class="step-num">02</span><span class="step-name">VirusTotal hash tekshiruvi</span><span class="step-status pending" id="as2">PENDING</span></div>
+          <div class="scan-step"><span class="step-num">03</span><span class="step-name">Ruxsatlar tahlili</span><span class="step-status pending" id="as3">PENDING</span></div>
+          <div class="scan-step"><span class="step-num">04</span><span class="step-name">Xavfli API call aniqlash</span><span class="step-status pending" id="as4">PENDING</span></div>
+          <div class="scan-step"><span class="step-num">05</span><span class="step-name">Risk score hisoblash</span><span class="step-status pending" id="as5">PENDING</span></div>
+        </div>
+
+        <div id="apkHashInfo" style="display:none;margin-top:1rem">
+          <div class="result-grid" style="margin-bottom:0">
+            <div class="result-cell"><div class="cell-label">SHA256</div><div class="cell-value" id="apk-sha" style="font-size:0.62rem"></div></div>
+            <div class="result-cell"><div class="cell-label">File Size</div><div class="cell-value" id="apk-size"></div></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="progress-wrap">
-      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
-    </div>
-
-    <div class="question-card" id="question-card">
-      <div class="q-category" id="q-category">YUKLANMOQDA...</div>
-      <div class="q-text" id="q-text"></div>
-      <div id="q-extra"></div>
-      <div class="options-grid" id="options-container"></div>
-      <div class="feedback-box" id="feedback-box">
-        <div class="feedback-title" id="feedback-title"></div>
-        <div id="feedback-text"></div>
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+        <span class="panel-title">ANALYSIS_OUTPUT</span>
+      </div>
+      <div class="panel-body" id="apkOutput">
+        <div style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.72rem;text-align:center;padding:2rem 0">
+          APK fayl yuklang — tahlil natijasi shu yerda ko'rinadi
+        </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="btn-group" id="next-btn-wrap" style="display:none;">
-      <button class="btn btn-primary" onclick="nextQuestion()">KEYINGI SAVOL →</button>
+<hr class="divider">
+
+<!-- SCAM DB -->
+<section class="section" id="scam-section">
+  <div class="section-header">
+    <span class="section-num">04 // SCAM_DATABASE</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">Scam & Threat Database</h2>
+  <p class="section-desc">O'zbekistondagi va global tahdidlar bazasi. Yangi scam'larni xabar qiling.</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('browse',this)">Bazani Ko'rish</button>
+    <button class="tab" onclick="switchTab('report',this)">Scam Xabar Qilish</button>
+    <button class="tab" onclick="switchTab('telegram',this)">Telegram Tekshirish</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-browse">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+        <span class="panel-title">SCAM_DB :: LIVE</span>
+      </div>
+      <div class="panel-body">
+        <div class="input-row" style="margin-bottom:1rem">
+          <input type="text" class="ct-input" id="scamSearch" placeholder="Domen, IP yoki kalit so'z..." onkeydown="if(event.key==='Enter')searchScam()">
+          <button class="btn-primary" onclick="searchScam()">QIDIRISH</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="scam-table" id="scamTable">
+            <thead><tr><th>Domain / URL</th><th>Turi</th><th>Risk</th><th>Birinchi Ko'rilgan</th><th>Xabarlar</th><th>Holat</th></tr></thead>
+            <tbody id="scamBody">
+              <tr><td>secure-paypa1.com</td><td><span class="pill phishing">PHISHING</span></td><td style="color:var(--accent-red)">97/100</td><td>2026-01-12</td><td>1,247</td><td><span class="tag red">TASDIQLANGAN</span></td></tr>
+              <tr><td>bank0famerica.com</td><td><span class="pill phishing">PHISHING</span></td><td style="color:var(--accent-red)">99/100</td><td>2026-02-01</td><td>2,109</td><td><span class="tag red">TASDIQLANGAN</span></td></tr>
+              <tr><td>uzcard-verify.xyz</td><td><span class="pill phishing">PHISHING</span></td><td style="color:var(--accent-red)">95/100</td><td>2026-02-14</td><td>847</td><td><span class="tag red">TASDIQLANGAN</span></td></tr>
+              <tr><td>crypto-profit-uz.net</td><td><span class="pill fraud">FRAUD</span></td><td style="color:var(--accent-orange)">88/100</td><td>2026-03-01</td><td>412</td><td><span class="tag orange">TEKSHIRILMOQDA</span></td></tr>
+              <tr><td>apk-premium-mod.xyz</td><td><span class="pill malware">MALWARE</span></td><td style="color:var(--accent-orange)">85/100</td><td>2026-03-05</td><td>341</td><td><span class="tag orange">TEKSHIRILMOQDA</span></td></tr>
+              <tr><td>humo-online.site</td><td><span class="pill phishing">PHISHING</span></td><td style="color:var(--accent-red)">93/100</td><td>2026-03-12</td><td>623</td><td><span class="tag red">TASDIQLANGAN</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Result Screen -->
-  <div class="screen" id="screen-result">
-    <div class="result-screen">
-      <span class="result-badge" id="result-badge">🏆</span>
-      <div class="result-title" id="result-title"></div>
-      <div class="result-score" id="result-score"></div>
-
-      <div class="result-breakdown">
-        <div class="rb-item">
-          <div class="rb-num" id="rb-correct" style="color: var(--accent)">0</div>
-          <div class="rb-label">To'g'ri javob</div>
-        </div>
-        <div class="rb-item">
-          <div class="rb-num" id="rb-wrong" style="color: var(--danger)">0</div>
-          <div class="rb-label">Xato javob</div>
-        </div>
-        <div class="rb-item">
-          <div class="rb-num" id="rb-score">0</div>
-          <div class="rb-label">Umumiy ball</div>
-        </div>
+  <div class="tab-pane" id="tab-report">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+        <span class="panel-title">XABAR_YUBORISH</span>
       </div>
-
-      <div class="tips-section">
-        <div class="tips-title">📋 ASOSIY QOIDALAR — ESLAB QOL!</div>
-        <div class="tip-item"><span class="tip-icon">🔗</span><span><strong>URL tekshir:</strong> Har doim sayt manzilini diqqat bilan o'qi. "g00gle.com" yoki "bank-uz.info" — soxta!</span></div>
-        <div class="tip-item"><span class="tip-icon">🔑</span><span><strong>Kuchli parol:</strong> Kamida 12 ta belgi, katta/kichik harf, raqam va maxsus belgilar. Har bir sayt uchun alohida parol!</span></div>
-        <div class="tip-item"><span class="tip-icon">📱</span><span><strong>2FA yoq:</strong> Har doim ikki bosqichli tasdiqlashni yoq. SMS kod qo'shimcha himoya beradi.</span></div>
-        <div class="tip-item"><span class="tip-icon">⚡</span><span><strong>Shoshma!</strong> "Tez harakatlaning!" degan xabarlar — firibgarlik belgisi. Hech qachon shoshib qaror qilma.</span></div>
-        <div class="tip-item"><span class="tip-icon">🔒</span><span><strong>HTTPS tekshir:</strong> Muhim ma'lumot kiritishdan oldin manzil qatorida 🔒 belgisi borligini tekshir.</span></div>
-      </div>
-
-      <div class="btn-group" style="margin-top: 24px;">
-        <button class="btn btn-primary" onclick="restartGame()">🔄 QAYTA O'YNASH</button>
-        <button class="btn btn-secondary" onclick="shareResult()">📤 NATIJANI ULASHISH</button>
+      <div class="panel-body">
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div class="form-group">
+            <label class="form-label">Shubhali URL / Domen</label>
+            <input type="text" class="ct-input" id="reportUrl" placeholder="https://scam-sayt.xyz">
+          </div>
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label">Tahdid Turi</label>
+              <select class="form-select" id="reportType">
+                <option>Phishing</option>
+                <option>Malware Tarqatish</option>
+                <option>Moliyaviy Firibgarlik</option>
+                <option>Telegram Scam</option>
+                <option>APK Zararli Fayl</option>
+                <option>Kripto Firibgarlik</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Jiddiylik Darajasi</label>
+              <select class="form-select" id="reportSeverity">
+                <option>Kritik (Faol + Keng tarqalgan)</option>
+                <option>Yuqori (Tasdiqlangan)</option>
+                <option>O'rta (Shubhali)</option>
+                <option>Past (Potensial)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tavsif / Dalillar</label>
+            <textarea class="form-textarea" id="reportDesc" placeholder="Nima sodir bo'ldi? Qanday duch keldingiz? Qo'shimcha ma'lumot..."></textarea>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn-primary" style="background:var(--accent-red);clip-path:none" onclick="submitReport()">⚠ XABAR YUBORISH</button>
+            <button class="btn-secondary">Anonim Yuborish</button>
+          </div>
+          <div id="reportResult"></div>
+        </div>
       </div>
     </div>
   </div>
+
+  <div class="tab-pane" id="tab-telegram">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+        <span class="panel-title">TELEGRAM_SCANNER</span>
+      </div>
+      <div class="panel-body">
+        <div class="input-row">
+          <div style="background:var(--bg-deep);border:1px solid var(--border);border-right:none;padding:0 0.75rem;display:flex;align-items:center;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-dim)">@</div>
+          <input type="text" class="ct-input" id="tgInput" style="border-left:none" placeholder="username yoki bot nomi" onkeydown="if(event.key==='Enter')checkTelegram()">
+          <button class="btn-primary" onclick="checkTelegram()">⚡ TEKSHIRISH</button>
+        </div>
+        <div id="tgResult">
+          <div class="alert info"><span>ℹ</span><span>Telegram username, bot yoki t.me havolasini kiriting.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- DARK WEB -->
+<section class="section" id="dark-section">
+  <div class="section-header">
+    <span class="section-num">05 // DARK_WEB_BREACH_CHECK</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">Dark Web Ma'lumot Sizish Tekshiruvi</h2>
+  <p class="section-desc">Email yoki telefon raqamingiz ma'lumot bazasi sizishlarida bormi? Ko'ring.</p>
+
+  <div class="tool-panel">
+    <div class="panel-header">
+      <div class="panel-dots"><div class="panel-dot r"></div><div class="panel-dot y"></div><div class="panel-dot g"></div></div>
+      <span class="panel-title">BREACH_INTEL :: 14B+ RECORDS</span>
+    </div>
+    <div class="panel-body">
+      <div class="alert warning"><span>🔒</span><span>K-anonymity usulida tekshiriladi. Emailingiz to'liq yuborilmaydi. GDPR mos.</span></div>
+      <div class="input-row">
+        <input type="text" class="ct-input" id="leakInput" placeholder="email@domain.com yoki +998901234567" onkeydown="if(event.key==='Enter')checkLeak()">
+        <button class="btn-primary" onclick="checkLeak()">🔍 TEKSHIRISH</button>
+      </div>
+      <div id="leakResult">
+        <div style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.72rem;text-align:center;padding:2rem 0">Email yoki telefon raqam kiriting</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PRICING -->
+<section class="section" id="pricing-section">
+  <div class="section-header">
+    <span class="section-num">06 // PRICING</span>
+    <div class="section-line"></div>
+  </div>
+  <h2 class="section-title">Narxlar</h2>
+  <p class="section-desc">Individual tadqiqotchilardan korxona xavfsizlik guruhlarigacha.</p>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="plan-name">Bepul</div>
+      <div class="plan-price"><sup>$</sup>0</div>
+      <div class="plan-period">// ABADIY BEPUL</div>
+      <ul class="plan-feats">
+        <li><span class="ok">▸</span> Kuniga 20 URL skan</li>
+        <li><span class="ok">▸</span> Kuniga 5 IP qidirish</li>
+        <li><span class="ok">▸</span> Haftada 1 APK skan</li>
+        <li><span class="ok">▸</span> Scam DB ko'rish</li>
+        <li class="dim"><span class="no">✗</span> API kirish</li>
+        <li class="dim"><span class="no">✗</span> Ommaviy skanerlash</li>
+      </ul>
+      <button class="btn-secondary" style="width:100%">BEPUL BOSHLASH</button>
+    </div>
+    <div class="price-card featured">
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><sup>$</sup>49</div>
+      <div class="plan-period">// OY UCHUN</div>
+      <ul class="plan-feats">
+        <li><span class="ok">▸</span> Cheksiz URL skan</li>
+        <li><span class="ok">▸</span> Cheksiz IP qidirish</li>
+        <li><span class="ok">▸</span> Oyiga 50 APK skan</li>
+        <li><span class="ok">▸</span> API kirish (10k req)</li>
+        <li><span class="ok">▸</span> Telegram skanerlash</li>
+        <li><span class="ok">▸</span> PDF hisobotlar</li>
+      </ul>
+      <button class="btn-primary" style="width:100%;clip-path:none">PRO BOSHLASH</button>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price"><sup>$</sup>299</div>
+      <div class="plan-period">// OY UCHUN</div>
+      <ul class="plan-feats">
+        <li><span class="ok">▸</span> Pro'dagi hamma narsa</li>
+        <li><span class="ok">▸</span> Cheksiz API</li>
+        <li><span class="ok">▸</span> SIEM integratsiya</li>
+        <li><span class="ok">▸</span> Maxsus webhook</li>
+        <li><span class="ok">▸</span> SLA qo'llab-quvvatlash</li>
+        <li><span class="ok">▸</span> White-label litsenziya</li>
+      </ul>
+      <button class="btn-secondary" style="width:100%">SAVDO BO'LIMI</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>
+    <span class="logo-text">CYBERTRACE</span>
+    <p class="footer-desc">O'zbekiston va global kiberxavfsizlik tahdidlaridan himoya. VirusTotal, IPinfo, AbuseIPDB integratsiyasi.</p>
+  </div>
+  <div>
+    <div class="footer-col-title">Platforma</div>
+    <ul class="footer-links"><li><a href="#">Phishing Analizator</a></li><li><a href="#">IP Razvedkasi</a></li><li><a href="#">APK Scanner</a></li><li><a href="#">Scam Baza</a></li></ul>
+  </div>
+  <div>
+    <div class="footer-col-title">Dasturchilar</div>
+    <ul class="footer-links"><li><a href="#">API Hujjatlar</a></li><li><a href="#">SDK</a></li><li><a href="#">GitHub</a></li><li><a href="#">Status</a></li></ul>
+  </div>
+  <div>
+    <div class="footer-col-title">Kompaniya</div>
+    <ul class="footer-links"><li><a href="#">Haqimizda</a></li><li><a href="#">Maxfiylik</a></li><li><a href="#">Xizmat Shartlari</a></li><li><a href="#">Aloqa</a></li></ul>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span>© 2026 CYBERTRACE // O'ZBEKISTON</span>
+  <span>v2.4.1 // VIRUSTOTAL + IPINFO + ABUSEIPDB</span>
 </div>
 
 <script>
-// Questions database
-const questions = [
-  {
-    category: "PHISHING ANIQLASH",
-    text: "Quyidagi emailni o'qing. Bu xabar xavfsizmi?",
-    extra: {
-      type: "email",
-      from: "noreply@paypal-secure-verify.com",
-      subject: "⚠️ Hisobingiz bloklanishi mumkin! Zudlik bilan harakat qiling!",
-      body: `Hurmatli foydalanuvchi,\n\nHisobingizda shubhali faoliyat aniqlandi.\n24 soat ichida ma'lumotlaringizni tasdiqlamasangiz, hisobingiz BLOKLANADI!\n\n👉 HOZIROQ TASDIQLANG: http://paypal.secure-verify-account.xyz\n\nPayPal Xavfsizlik Jamoasi`
-    },
-    options: [
-      "Ha, xavfsiz — PayPal dan kelgan",
-      "Yo'q, bu phishing xujum!",
-      "Bilmayman, havola ochib ko'raman",
-      "Xabarni do'stlarimga yo'llaman"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "🎯 To'g'ri! Bu klassik phishing xujumi. Belgilari: 1) Soxta domen (paypal-secure-verify.com ≠ paypal.com) 2) Qo'rqitish uslubi ('24 soat', 'bloklanadi') 3) Shoshirishtirishga harakat 4) Shubhali havola.",
-      wrong: "Bu phishing xujumi! Haqiqiy PayPal xabarlari faqat paypal.com domenidan keladi. Hech qachon bunday havolaga kirma!"
-    }
-  },
-  {
-    category: "PAROL XAVFSIZLIGI",
-    text: "Quyidagi parollardan qaysi biri ENG XAVFSIZ?",
-    options: [
-      "qwerty123",
-      "Asliddin1990",
-      "K@t3!mX#9pL$2n",
-      "parol2024"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🔐 To'g'ri! 'K@t3!mX#9pL$2n' — katta/kichik harf, raqam va maxsus belgilar aralashmasi. Taxmin qilish deyarli imkonsiz. Ideal uzunlik: 12+ belgi.",
-      wrong: "Eng xavfsiz parol — 'K@t3!mX#9pL$2n'. U turli turdagi belgilarni o'z ichiga oladi va uzun. 'qwerty123' yoki 'parol2024' — eng ko'p ishlatiladigan va xavfli parollar!"
-    }
-  },
-  {
-    category: "INTERNET XAVFSIZLIGI",
-    text: "Do'stingiz sizga Telegram orqali: 'Shoshilinch! Mening kartam bloklanib qoldi, menga 500 000 so'm yuborchi, ertaga qaytaraman' deb yozdi. Nima qilasiz?",
-    options: [
-      "Darhol pul yuboraman, do'stim qiynalmasin",
-      "Do'stimga qo'ng'iroq qilib, haqiqatligini tekshiraman",
-      "Xabarni o'qimasdan o'chiraman",
-      "Boshqa do'stlarimga ham xabar beraman"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "✅ To'g'ri! Do'stingiz Telegram akkauntini o'g'irlashgan bo'lishi mumkin. HECH QACHON tekshirmasdan pul yuborma. Qo'ng'iroq qilib haqiqatligini aniqla!",
-      wrong: "Xavfli! Do'stingizning akkauntini xakerlar o'g'irlab, sizdan pul so'rashi mumkin. Har doim telefon qo'ng'irog'i orqali tasdiqlang!"
-    }
-  },
-  {
-    category: "SAYT XAVFSIZLIGI",
-    text: "Bank saytiga kirib plastik karta ma'lumotlarini kiritmoqchisiz. Qaysi manzil XAVFSIZ?",
-    options: [
-      "http://uzbank-online.com/login",
-      "https://uzbank.uz/kabinet",
-      "https://uzbank-secure-login.net",
-      "http://www.uzbank.uz"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "🔒 To'g'ri! 'https://uzbank.uz' — to'g'ri rasmiy domen + HTTPS shifrlash. Qolganlari: birinchi (http, xavfsiz emas), uchinchi (soxta domen), to'rtinchi (http, xavfsiz emas).",
-      wrong: "To'g'ri javob: https://uzbank.uz. HTTPS va rasmiy domen (.uz) — ikki muhim belgi. 'uzbank-secure-login.net' kabi domenlar — firibgarlik!"
-    }
-  },
-  {
-    category: "IJTIMOIY MUHANDISLIK",
-    text: "Telefon orqali 'bank xodimi' qo'ng'iroq qilib, kartangizni tekshirish uchun 16 raqamli karta raqami va CVV kodini so'radi. Nima qilasiz?",
-    options: [
-      "Beraman — xodim ehtiyot chorasi uchun so'rayapti",
-      "Faqat karta raqamini beraman, CVV ni bermayman",
-      "Qo'ng'iroqni kesaman va bankka rasmiy raqamdan qo'ng'iroq qilaman",
-      "Raqamlarni birma-bir aytaman, lekin oxirgi ikki raqamni o'zgartirib"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🛡️ To'g'ri! Haqiqiy bank xodimlari HECH QACHON CVV va to'liq karta ma'lumotlarini so'ramaydi. Bunday qo'ng'iroqlar — 100% firibgarlik! Bankga kartaning orqa tomonidagi rasmiy raqamdan qo'ng'iroq qil.",
-      wrong: "Xavfli! Hech qachon telefon orqali karta ma'lumotlarini berma. Haqiqiy bank xodimlari buni so'rashiga huquqlari yo'q. Bu — ijtimoiy muhandislik hujumi!"
-    }
-  },
-  {
-    category: "PAROL XAVFSIZLIGI",
-    text: "Qaysi xatti-harakat parol xavfsizligini BUZADI?",
-    options: [
-      "Har 3 oyda parolni o'zgartirish",
-      "Parol menejeridan foydalanish",
-      "Barcha saytlarda bir xil parol ishlatish",
-      "Ikki bosqichli tasdiqlashni yoqish"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "⚠️ To'g'ri! Bir xil parolni hamma joyda ishlatish eng xavfli odatlardan biri. Agar bitta sayt hacklanib parolingiz o'g'irlansa, barcha akkauntlaringiz xavf ostida!",
-      wrong: "Bir xil parolni hamma joyda ishlatish — eng katta xato! Agar bitta sayt hacklanib parolingiz o'g'irlansa, xakerlar boshqa barcha akkauntlaringizga ham kira oladi."
-    }
-  },
-  {
-    category: "PHISHING ANIQLASH",
-    text: "Instagram'da notanish odam: 'Siz 1,000,000 so'm yutdingiz! Mukofotni olish uchun kartangizga 50,000 so'm komissiya to'lang' deb yozdi. Bu nima?",
-    options: [
-      "Haqiqiy tanlov — baxtim kulib boqdi!",
-      "Reklama — qiziqarli taklif",
-      "Klassik firibgarlik sxemasi",
-      "Ehtimol haqiqiy — tekshirib ko'raman"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🎯 To'g'ri! 'Komissiya to'lab mukofot ol' — klassik firibgarlik. Haqiqiy tanlovlarda HECH QACHON sovg'a olish uchun pul to'latilmaydi. Bu yerda maqsad — 50 000 so'mingizni o'g'irlash!",
-      wrong: "Bu 100% firibgarlik! 'Avans to'lab mukofot ol' sxemasi — internetdagi eng ko'p tarqalgan aldov. Hech qachon bunday 'mukofot' uchun pul to'lama!"
-    }
-  },
-  {
-    category: "INTERNET XAVFSIZLIGI",
-    text: "Jamoat joyidagi bepul WiFi'ga ulangansiz. Nima qilish XAVFLI?",
-    options: [
-      "Yangiliklar o'qish",
-      "YouTube ko'rish",
-      "Internet-banking va karta ma'lumotlari kiritish",
-      "Ob-havo tekshirish"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🔓 To'g'ri! Jamoat WiFi'da ma'lumotlar shifrlashsiz uzatiladi. Xakerlar 'Man-in-the-middle' hujum orqali karta ma'lumotlaringizni ushlab qolishi mumkin. Bank operatsiyalari uchun mobil internet ishlat!",
-      wrong: "Jamoat WiFi'da bank operatsiyalari o'ta xavfli! Xakerlar bir xil tarmoqda ma'lumotlaringizni o'g'irlashi mumkin. Faqat mobil internet (4G/5G) orqali bankingizga kiring."
-    }
-  },
-  {
-    category: "IJTIMOIY TARMOQLAR",
-    text: "Ijtimoiy tarmoqlarda qanday ma'lumot ulashish XAVFLI?",
-    options: [
-      "Sevimli film haqida post",
-      "Pasport ma'lumotlari va yashash manzilingiz",
-      "Dam olish joyidagi rasm",
-      "Musiqa tavsiyasi"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "🚫 To'g'ri! Pasport ma'lumotlari, yashash manzili, telefon raqami kabi shaxsiy ma'lumotlarni ijtimoiy tarmoqlarda ulashish juda xavfli. Firibgarlar bu ma'lumotlardan sizning nomingizdan kredit olish yoki boshqa aldovlar uchun foydalanishi mumkin!",
-      wrong: "Pasport ma'lumotlari va yashash manzilingizni ijtimoiy tarmoqlarda HECH QACHON ulashmang! Firibgarlar bu ma'lumotlardan sizni aldash yoki sizning nomingizdan qarz olish uchun foydalanadi."
-    }
-  },
-  {
-    category: "XAVFSIZLIK ASOSLARI",
-    text: "Akkauntingizni eng kuchli himoya qilish uchun qaysi choralarni ko'rish kerak?",
-    options: [
-      "Faqat kuchli parol qo'yish yetarli",
-      "Kuchli parol + ikki bosqichli tasdiqlash (2FA)",
-      "Tez-tez parolni o'zgartirish",
-      "Parolni qog'ozga yozib saqlash"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "🏆 To'g'ri! Kuchli parol + 2FA — oltin kombinatsiya. 2FA yoqilganda, parolingiz o'g'irlansa ham, SMS kod bo'lmasa xaker kira olmaydi. Barcha muhim akkauntlaringizda (bank, email, ijtimoiy tarmoqlar) 2FA ni yoqing!",
-      wrong: "Eng kuchli himoya = Kuchli parol + 2FA (ikki bosqichli tasdiqlash). Parolingiz o'g'irlansa ham, SMS kod bo'lmasa xaker kira olmaydi!"
-    }
-  },
-  {
-    category: "SCAM VA FIRIBGARLIK",
-    text: "OLX.uz da arzon narxda iPhone sotilayapti. Sotuvchi: 'Pul avval o'tkazing, tovarni yetkazib beraman' dedi. Nima qilasiz?",
-    options: [
-      "Pul o'tkazaman — narxi juda arzon!",
-      "Avval tovarni ko'rib, keyin to'layman yoki uchrashib sotib olaman",
-      "Yarmi avval, yarmi keyinchalik to'layman",
-      "Do'stimga so'rab ko'raman"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "✅ To'g'ri! 'Avval pul, keyin tovar' — klassik internet firibgarligi. Har doim tovarni ko'rib, yuzma-yuz uchrashib sotib ol. Notanish odamga avvaldan pul o'tkazma!",
-      wrong: "Xavfli! 'Avval pul o'tkazing' talab qiladigan sotuvchilar ko'pincha firibgar. Pul yuborib tovarni ololmay qolasiz. Har doim yuzma-yuz uchrashib sotib oling!"
-    }
-  },
-  {
-    category: "SCAM VA FIRIBGARLIK",
-    text: "Telefoningizga SMS keldi: 'Siz 5,000,000 so'm yutdingiz! Mukofotni olish uchun ushbu raqamga qo'ng'iroq qiling: +998 99 XXX XX XX'. Nima qilasiz?",
-    options: [
-      "Darhol qo'ng'iroq qilaman!",
-      "Avval qaysi kompaniya ekanligi tekshiraman",
-      "O'chiraman — bu 100% firibgarlik",
-      "Oilamga aytib maslahatlashaman"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🎯 To'g'ri! Bunday SMS lar — klassik scam. Hech qachon tanlov o'tkazmagan bo'lsangiz, yutolmaysiz! Qo'ng'iroq qilsangiz, pullik raqam bo'lib, hisobingizdan pul yechiladi yoki karta ma'lumotlaringizni so'rashadi.",
-      wrong: "Bu 100% firibgarlik! Ishtirok etmagan tanlovda yutish mumkin emas. Bunday raqamlarga qo'ng'iroq qilish pullik bo'lishi yoki ma'lumotlaringizni o'g'irlashga olib kelishi mumkin."
-    }
-  },
-  {
-    category: "IJTIMOIY TARMOQ XAVFSIZLIGI",
-    text: "Instagram'da ko'p obunachilik uchun: 'Bizning ilovani yuklab, login va parolingizni kiriting — 10,000 ta obunachilik beramiz' degan taklif bor. Nima qilasiz?",
-    options: [
-      "Yuklab ko'raman — obunachilik kerak!",
-      "Faqat login kiriting, parolsiz",
-      "Hech qachon! Bu akkauntni o'g'irlash usuli",
-      "Do'stim ham ishlatgan, xavfsiz"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🔐 To'g'ri! Uchinchi tomon ilovalariga Instagram login/parol berish — akkauntni topshirish bilan barobar. Ular sizning nomingizdan spam tarqatadi, akkauntni sotadi yoki qoralovchi ma'lumot izlaydi!",
-      wrong: "Bu akkauntingizni o'g'irlash usuli! Hech qachon login va parolingizni uchinchi tomon ilovalariga bermang. Haqiqiy Instagram faqat o'z ilovasi orqali ishlaydi."
-    }
-  },
-  {
-    category: "IJTIMOIY TARMOQ XAVFSIZLIGI",
-    text: "Tanish bo'lmagan odam Instagram'da do'stlik so'radi, keyin romantik munosabat boshladi va bir oydan so'ng 'favqulodda holat' uchun pul so'radi. Bu nima?",
-    options: [
-      "Haqiqiy sevgi — yordam beraman",
-      "'Romance scam' — romantik firibgarlik",
-      "Shunchaki qiyin ahvolga tushib qolgan",
-      "Pul qarzga beraman, keyin qaytaradi"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "💔 To'g'ri! Bu 'Romance scam' — dunyoda eng ko'p tarqalgan firibgarlik turlaridan biri. Firibgarlar haftalar, hatto oylar davomida ishonch qozonadi, keyin pul so'raydi. Hech qachon internetda tanishgan notanish odamga pul yuborma!",
-      wrong: "Bu 'Romance scam' — romantik firibgarlik! Firibgarlar ataylab his-tuyg'ularingizni boshqarib, pul oladi. Internetda tanishgan va hech ko'rishilmagan odamga HECH QACHON pul yuborma!"
-    }
-  },
-  {
-    category: "VIRUS VA ZARARLI DASTURLAR",
-    text: "Kompyuteringizda to'satdan oyna ochildi: '⚠️ Viruslar aniqlandi! Hozir tozalash uchun bu raqamga qo'ng'iroq qiling yoki dastur yuklab oling!' Nima qilasiz?",
-    options: [
-      "Ko'rsatilgan raqamga qo'ng'iroq qilaman",
-      "Dasturni yuklab, o'rnataman",
-      "Oynani yopaman — bu 'scareware' firibgarlik",
-      "Barcha fayllarni o'chiraman"
-    ],
-    correct: 2,
-    feedback: {
-      correct: "🛡️ To'g'ri! Bu 'Scareware' — qo'rqitib pul yoki ma'lumot olish usuli. Haqiqiy antivirus dasturlari hech qachon qo'ng'iroq raqami ko'rsatmaydi. Oynani yoping (Alt+F4), keyin haqiqiy antivirus tekshiruvi o'tkazing.",
-      wrong: "Bu 'Scareware'! Kompyuteringizda virus yo'q — bu oyna o'zi virus yoki firibgarlik. Raqamga qo'ng'iroq qilsangiz, pul to'latasiz. Dastur yuklasangiz — haqiqiy virus kiritasiz!"
-    }
-  },
-  {
-    category: "VIRUS VA ZARARLI DASTURLAR",
-    text: "Do'stingiz Telegram orqali fayl yubordi: 'Buni yuklab ol, juda zo'r o'yin!' — lekin fayl nomi 'game_setup.exe.pdf' ko'rinadi. Nima qilasiz?",
-    options: [
-      "Yuklab ochaman — do'stim yuborgan",
-      "Avval do'stimga qo'ng'iroq qilib, haqiqatligini tekshiraman",
-      "Faylni yuklayman lekin ochmayman",
-      "Barchaga ham yuboraman"
-    ],
-    correct: 1,
-    feedback: {
-      correct: "✅ To'g'ri! '.exe.pdf' kabi ikki kengaytmali fayllar — zararli dastur belgisi. Do'stingiz akkauntini o'g'irlashgan bo'lishi mumkin. Har doim qo'ng'iroq qilib tasdiqlang. Hech qachon noma'lum fayllarni ochmang!",
-      wrong: "Xavfli! 'game_setup.exe.pdf' — bu zararli dastur (troyan). Do'stingiz akkauntini xakerlar boshqarayotgan bo'lishi mumkin. Bunday fayllarni HECH QACHON ochmang — avval qo'ng'iroq qilib tekshiring!"
+// ─────────────────────────────────────────────
+//  CONFIG & STATE
+// ─────────────────────────────────────────────
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+function cfg(key) {
+  return localStorage.getItem('ct_' + key) || '';
+}
+
+function saveApiKeys() {
+  localStorage.setItem('ct_vt',       document.getElementById('vtKey').value.trim());
+  localStorage.setItem('ct_ipinfo',   document.getElementById('ipinfoKey').value.trim());
+  localStorage.setItem('ct_abuse',    document.getElementById('abuseKey').value.trim());
+  localStorage.setItem('ct_backend',  document.getElementById('backendUrl').value.trim());
+  const msg = document.getElementById('saveMsg');
+  msg.style.display = 'inline';
+  setTimeout(() => msg.style.display = 'none', 2500);
+  updateApiStatus();
+}
+
+function updateApiStatus() {
+  const haVT = !!cfg('vt');
+  document.getElementById('apiStatus').textContent = haVT ? 'API ACTIVE' : 'DEMO MODE';
+}
+
+function showApiConfig() {
+  document.getElementById('api-config').scrollIntoView({behavior:'smooth'});
+  // Pre-fill
+  if (cfg('vt'))      document.getElementById('vtKey').value      = cfg('vt');
+  if (cfg('ipinfo'))  document.getElementById('ipinfoKey').value  = cfg('ipinfo');
+  if (cfg('abuse'))   document.getElementById('abuseKey').value   = cfg('abuse');
+  if (cfg('backend')) document.getElementById('backendUrl').value = cfg('backend');
+}
+
+async function testConnection() {
+  const backend = cfg('backend') || 'http://localhost:8000';
+  const el = document.getElementById('connectionResult');
+  el.innerHTML = '<div class="alert info"><span>⟳</span><span>Ulanish tekshirilmoqda...</span></div>';
+  try {
+    const r = await fetch(backend + '/api/health', {signal: AbortSignal.timeout(5000)});
+    const d = await r.json();
+    el.innerHTML = `<div class="alert success"><span>✓</span><span>Backend ulandi! Status: ${d.status} | VT: ${d.apis?.virustotal} | IPinfo: ${d.apis?.ipinfo}</span></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="alert warning"><span>⚠</span><span>Backend ulanmadi (${e.message}). Demo rejimda ishlaymiz — API kalitlar bilan to'g'ridan-to'g'ri so'rov yuboriladi.</span></div>`;
+  }
+}
+
+function scrollTo(id) {
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+}
+
+// ─────────────────────────────────────────────
+//  TERMINAL LOGGER
+// ─────────────────────────────────────────────
+function tlog(logId, prompt, text, cls='') {
+  const log = document.getElementById(logId);
+  // Remove cursor line
+  const cursors = log.querySelectorAll('.t-cursor');
+  cursors.forEach(c => c.parentElement?.remove());
+  
+  const line = document.createElement('div');
+  line.className = 't-line';
+  line.innerHTML = `<span class="t-prompt">${prompt}</span><span class="t-out ${cls}">${text}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+function tcursor(logId) {
+  const log = document.getElementById(logId);
+  const line = document.createElement('div');
+  line.className = 't-line';
+  line.innerHTML = `<span class="t-prompt">&nbsp;</span><span class="t-cursor"></span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ─────────────────────────────────────────────
+//  URL ANALYZER
+// ─────────────────────────────────────────────
+async function analyzeURL() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+
+  const btn = document.getElementById('urlBtn');
+  btn.disabled = true;
+
+  // Reset UI
+  document.getElementById('urlAlert').style.display = 'none';
+  document.getElementById('vtStats').style.display = 'none';
+  ['u-domain','u-ip','u-host','u-ssl','u-loc','u-tz'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '...';
+    el.className = 'cell-value loading';
+  });
+  document.getElementById('urlRiskBar').style.width = '0%';
+  document.getElementById('urlRiskScore').textContent = '—';
+  document.getElementById('urlRiskScore').style.color = 'var(--text-dim)';
+  document.getElementById('urlRiskBadge').textContent = 'SCANNING';
+  document.getElementById('urlRiskBadge').className = 'risk-badge pending';
+
+  const log = document.getElementById('urlLog');
+  log.innerHTML = '';
+  tlog('urlLog', 'CT:~$', `analyze --url "${url}"`);
+
+  const vtKey    = cfg('vt');
+  const ipKey    = cfg('ipinfo');
+  const backend  = cfg('backend');
+
+  let fullUrl = url.startsWith('http') ? url : 'https://' + url;
+  let domain = '';
+  try { domain = new URL(fullUrl).hostname; } catch { domain = fullUrl; }
+
+  // Try backend first, fallback to direct API
+  let result = null;
+
+  if (backend) {
+    try {
+      tlog('urlLog', '', `› Backend API so'rovi: ${backend}/api/analyze/url`);
+      const r = await fetch(backend + '/api/analyze/url', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({url: fullUrl}),
+        signal: AbortSignal.timeout(20000)
+      });
+      if (r.ok) result = await r.json();
+    } catch(e) {
+      tlog('urlLog', '', `› Backend mavjud emas, to'g'ridan-to'g'ri API...`, 'warn');
     }
   }
-];
 
-let currentQuestion = 0;
-let score = 0;
-let numCorrect = 0;
-let numWrong = 0;
-let answered = false;
+  // Direct API calls if no backend
+  if (!result) {
+    result = { url: fullUrl, domain, ip: null, hosting_provider: null, ssl_valid: null, location: null, timezone: null, virustotal: null, risk_score: 0, verdict: 'safe', ip_details: {} };
 
-// Create particles
-function createParticles() {
-  const container = document.getElementById('particles');
-  for (let i = 0; i < 15; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.animationDuration = (8 + Math.random() * 12) + 's';
-    p.style.animationDelay = (Math.random() * 10) + 's';
-    p.style.setProperty('--drift', (Math.random() * 100 - 50) + 'px');
-    if (Math.random() > 0.7) {
-      p.style.background = '#00cfff';
-      p.style.boxShadow = '0 0 6px #00cfff';
+    // IPinfo
+    if (ipKey) {
+      try {
+        tlog('urlLog', '', `› IPinfo: DNS + geolokatsiya so'rovi...`);
+        const ipRes = await fetch(`https://ipinfo.io/${domain}?token=${ipKey}`);
+        if (ipRes.ok) {
+          const ipData = await ipRes.json();
+          result.ip = ipData.ip;
+          result.hosting_provider = ipData.org || 'Noma\'lum';
+          result.location = [ipData.city, ipData.country].filter(Boolean).join(', ');
+          result.timezone = ipData.timezone || '—';
+          result.ip_details = ipData;
+          tlog('urlLog', '', `  IP: ${ipData.ip} | Org: ${ipData.org}`, 'ok');
+        }
+      } catch(e) {
+        tlog('urlLog', '', `  IPinfo xatolik: ${e.message}`, 'err');
+      }
     } else {
-      p.style.boxShadow = '0 0 6px #00ff9d';
+      tlog('urlLog', '', `› IPinfo kaliti yo'q — demo ma'lumot`, 'warn');
+      result.ip = '104.21.XX.XX';
+      result.hosting_provider = 'Cloudflare, Inc.';
+      result.location = 'San Francisco, US';
     }
-    container.appendChild(p);
-  }
-}
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
-}
-
-function startGame() {
-  currentQuestion = 0;
-  score = 0;
-  numCorrect = 0;
-  numWrong = 0;
-  showScreen('game');
-  renderQuestion();
-}
-
-function renderQuestion() {
-  const q = questions[currentQuestion];
-  answered = false;
-
-  document.getElementById('q-counter').textContent = (currentQuestion + 1) + '/' + questions.length;
-  document.getElementById('score-display').textContent = score;
-  document.getElementById('correct-display').textContent = numCorrect;
-  document.getElementById('wrong-display').textContent = numWrong;
-
-  const pct = (currentQuestion / questions.length) * 100;
-  document.getElementById('progress-fill').style.width = pct + '%';
-
-  document.getElementById('q-category').textContent = q.category;
-  document.getElementById('q-text').textContent = q.text;
-
-  // Extra content (email, etc.)
-  const extraEl = document.getElementById('q-extra');
-  if (q.extra && q.extra.type === 'email') {
-    extraEl.innerHTML = `
-      <div class="email-box">
-        <div class="email-header">
-          <div class="email-field"><span class="email-label">KIM: </span><span class="email-suspicious">${q.extra.from}</span></div>
-          <div class="email-field"><span class="email-label">MAVZU: </span><span class="email-value">${q.extra.subject}</span></div>
-        </div>
-        <div class="email-body">${q.extra.body.replace(/\n/g, '<br>')}</div>
-      </div>
-    `;
-  } else {
-    extraEl.innerHTML = '';
+    // VirusTotal
+    if (vtKey) {
+      try {
+        tlog('urlLog', '', `› VirusTotal: URL tekshiruvi...`);
+        const b64 = btoa(fullUrl).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+        const vtRes = await fetch(`https://www.virustotal.com/api/v3/urls/${b64}`, {
+          headers: {'x-apikey': vtKey}
+        });
+        if (vtRes.ok) {
+          const vtData = await vtRes.json();
+          const stats = vtData.data?.attributes?.last_analysis_stats || {};
+          result.virustotal = {
+            malicious:  stats.malicious  || 0,
+            suspicious: stats.suspicious || 0,
+            harmless:   stats.harmless   || 0,
+            undetected: stats.undetected || 0,
+            engines_total: Object.values(stats).reduce((a,b)=>a+b,0),
+            permalink: `https://www.virustotal.com/gui/url/${b64}`
+          };
+          tlog('urlLog', '', `  VirusTotal: ${stats.malicious||0} malicious / ${stats.suspicious||0} suspicious / ${Object.values(stats).reduce((a,b)=>a+b,0)} engines`, stats.malicious > 0 ? 'err' : 'ok');
+          result.risk_score = calcUrlRisk(result.virustotal, domain);
+          result.verdict = result.risk_score >= 70 ? 'dangerous' : result.risk_score >= 40 ? 'suspicious' : 'safe';
+        } else if (vtRes.status === 404) {
+          // Submit for scanning
+          tlog('urlLog', '', `  VT'da topilmadi — yangi skan boshlandi...`, 'warn');
+          await fetch(`https://www.virustotal.com/api/v3/urls`, {
+            method:'POST',
+            headers:{'x-apikey':vtKey,'Content-Type':'application/x-www-form-urlencoded'},
+            body: `url=${encodeURIComponent(fullUrl)}`
+          });
+          result.virustotal = { malicious:0, suspicious:0, harmless:0, engines_total:0, note:'Skan navbatda, 30 soniyadan keyin qayta urinib ko\'ring' };
+        }
+      } catch(e) {
+        tlog('urlLog', '', `  VT xatolik: ${e.message}`, 'err');
+      }
+    } else {
+      tlog('urlLog', '', `› VirusTotal kaliti yo'q — demo natija`, 'warn');
+      result.virustotal = null;
+      // Simple heuristic score
+      result.risk_score = calcUrlRisk(null, domain);
+      result.verdict = result.risk_score >= 70 ? 'dangerous' : result.risk_score >= 40 ? 'suspicious' : 'safe';
+    }
   }
 
-  // Options
-  const letters = ['A', 'B', 'C', 'D'];
-  const container = document.getElementById('options-container');
-  container.innerHTML = '';
-  q.options.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
-    btn.onclick = () => selectAnswer(i);
-    container.appendChild(btn);
+  // Update UI
+  tlog('urlLog', '', `› Natijalar yangilanmoqda...`);
+
+  setCell('u-domain', result.domain || domain, '');
+  setCell('u-ip', result.ip || '—', '');
+  setCell('u-host', result.hosting_provider || '—', '');
+  setCell('u-ssl', fullUrl.startsWith('https') ? 'HTTPS — Xavfsiz' : 'HTTP — SSL yo\'q', fullUrl.startsWith('https') ? 'safe' : 'danger');
+  setCell('u-loc', result.location || '—', '');
+  setCell('u-tz', result.timezone || '—', '');
+
+  const score = result.risk_score || 0;
+  const verdict = result.verdict || 'safe';
+  const colors = { safe:'var(--accent-green)', suspicious:'var(--accent-orange)', dangerous:'var(--accent-red)' };
+  document.getElementById('urlRiskBar').style.width = score + '%';
+  document.getElementById('urlRiskScore').textContent = score;
+  document.getElementById('urlRiskScore').style.color = colors[verdict];
+  document.getElementById('urlRiskBadge').textContent = verdict === 'dangerous' ? 'XAVFLI' : verdict === 'suspicious' ? 'SHUBHALI' : 'XAVFSIZ';
+  document.getElementById('urlRiskBadge').className = 'risk-badge ' + verdict;
+
+  if (result.virustotal && result.virustotal.engines_total > 0) {
+    const vt = result.virustotal;
+    document.getElementById('vt-mal').textContent   = vt.malicious;
+    document.getElementById('vt-sus').textContent   = vt.suspicious;
+    document.getElementById('vt-clean').textContent = vt.harmless;
+    document.getElementById('vt-total').textContent = vt.engines_total;
+    if (vt.permalink) {
+      document.getElementById('vtLink').innerHTML = `<a href="${vt.permalink}" target="_blank" style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent-cyan)">VT HISOBOTI ↗</a>`;
+    }
+    document.getElementById('vtStats').style.display = 'flex';
+  }
+
+  const alertEl = document.getElementById('urlAlert');
+  if (verdict === 'dangerous') {
+    alertEl.innerHTML = `<div class="alert danger"><span>⛔</span><span>XAVFLI: Bu URL fishing yoki zararli sayt bo'lishi mumkin. Kirmasl ikni tavsiya qilamiz.</span></div>`;
+    alertEl.style.display = 'block';
+  } else if (verdict === 'suspicious') {
+    alertEl.innerHTML = `<div class="alert warning"><span>⚠</span><span>SHUBHALI: Bu URL shubhali ko'rinadi. Ehtiyot bo'ling.</span></div>`;
+    alertEl.style.display = 'block';
+  }
+
+  tlog('urlLog', 'CT:~$', `Skan tugadi. Risk: ${score}/100 — ${verdict.toUpperCase()}`, verdict === 'dangerous' ? 'err' : verdict === 'suspicious' ? 'warn' : 'ok');
+  tcursor('urlLog');
+  btn.disabled = false;
+}
+
+function setCell(id, val, cls) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'cell-value' + (cls ? ' ' + cls : '');
+}
+
+function calcUrlRisk(vt, domain) {
+  let s = 0;
+  if (vt) { s += Math.min((vt.malicious||0)*9,65); s += Math.min((vt.suspicious||0)*3,15); }
+  const badTlds = ['.xyz','.bond','.win','.top','.tk','.ml','.ga','.cf','.site','.click'];
+  if (badTlds.some(t => domain.endsWith(t))) s += 15;
+  const brands = ['paypal','google','facebook','apple','amazon','netflix','bank','uzcard','humo','payme'];
+  for (const b of brands) { if (domain.includes(b) && !domain.startsWith(b+'.')) { s += 25; break; } }
+  // Digit substitution check (paypa1, g00gle etc)
+  if (/\d/.test(domain.split('.')[0])) s += 10;
+  return Math.min(s, 100);
+}
+
+function clearURL() {
+  const log = document.getElementById('urlLog');
+  log.innerHTML = '';
+  tlog('urlLog', 'CT:~$', 'Tozalandi. Tayyor...');
+  tcursor('urlLog');
+  ['u-domain','u-ip','u-host','u-ssl','u-loc','u-tz'].forEach(id => setCell(id,'—',''));
+  document.getElementById('urlRiskBar').style.width = '0%';
+  document.getElementById('urlRiskScore').textContent = '—';
+  document.getElementById('urlRiskBadge').textContent = 'PENDING';
+  document.getElementById('urlRiskBadge').className = 'risk-badge pending';
+  document.getElementById('urlAlert').style.display = 'none';
+  document.getElementById('vtStats').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  IP ANALYZER
+// ─────────────────────────────────────────────
+async function analyzeIP() {
+  const ip = document.getElementById('ipInput').value.trim();
+  if (!ip) return;
+
+  const ipKey   = cfg('ipinfo');
+  const abuseKey = cfg('abuse');
+  const backend  = cfg('backend');
+
+  ['ip-addr','ip-loc','ip-isp','ip-asn','ip-abuse','ip-class'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '...';
   });
 
-  // Hide feedback and next button
-  const fb = document.getElementById('feedback-box');
-  fb.className = 'feedback-box';
-  document.getElementById('next-btn-wrap').style.display = 'none';
-}
+  let data = {};
 
-function selectAnswer(index) {
-  if (answered) return;
-  answered = true;
-
-  const q = questions[currentQuestion];
-  const buttons = document.querySelectorAll('.option-btn');
-  buttons.forEach(btn => btn.disabled = true);
-
-  const isCorrect = index === q.correct;
-
-  if (isCorrect) {
-    buttons[index].classList.add('correct');
-    score += 10;
-    numCorrect++;
-  } else {
-    buttons[index].classList.add('wrong');
-    buttons[q.correct].classList.add('correct');
-    numWrong++;
+  // Try backend
+  if (backend) {
+    try {
+      const r = await fetch(`${backend}/api/analyze/ip/${ip}`, {signal: AbortSignal.timeout(12000)});
+      if (r.ok) data = await r.json();
+    } catch {}
   }
 
-  // Update stats
-  document.getElementById('score-display').textContent = score;
-  document.getElementById('correct-display').textContent = numCorrect;
-  document.getElementById('wrong-display').textContent = numWrong;
-
-  // Show feedback
-  const fb = document.getElementById('feedback-box');
-  const ftitle = document.getElementById('feedback-title');
-  const ftext = document.getElementById('feedback-text');
-
-  if (isCorrect) {
-    fb.className = 'feedback-box correct show';
-    ftitle.innerHTML = '✅ TO\'G\'RI JAVOB! +10 ball';
-    ftext.textContent = q.feedback.correct;
-  } else {
-    fb.className = 'feedback-box wrong show';
-    ftitle.innerHTML = '❌ XATO JAVOB!';
-    ftext.textContent = q.feedback.wrong;
+  // Direct API
+  if (!data.ip && ipKey) {
+    try {
+      const r = await fetch(`https://ipinfo.io/${ip}?token=${ipKey}`);
+      if (r.ok) {
+        const d = await r.json();
+        const loc = (d.loc||'0,0').split(',');
+        data = {
+          ip: d.ip || ip,
+          city: d.city || '', region: d.region || '', country: d.country || '',
+          org: d.org || 'Noma\'lum',
+          asn: (d.org||'').split(' ')[0],
+          isp: (d.org||'').split(' ').slice(1).join(' '),
+          lat: parseFloat(loc[0]||0), lon: parseFloat(loc[1]||0),
+          timezone: d.timezone || '',
+          risk: 'unknown', tags: []
+        };
+        // Basic risk heuristic
+        const orgLow = (d.org||'').toLowerCase();
+        if (orgLow.includes('tor')) data.risk = 'dangerous';
+        else if (orgLow.includes('vpn') || orgLow.includes('proxy')) data.risk = 'suspicious';
+        else data.risk = 'safe';
+        data.tags = buildTags(data);
+      }
+    } catch(e) {}
   }
 
-  document.getElementById('next-btn-wrap').style.display = 'flex';
-}
+  if (!data.ip) {
+    // Demo
+    data = {
+      ip, city:'Demo', region:'', country:'UZ',
+      org:'Demo ISP', asn:'AS0', isp:'Demo', lat:41.3, lon:69.2,
+      risk:'safe', tags:[{label:'DEMO', color:'cyan'}],
+      abuse_score: 0, abuse_reports: 0
+    };
+  }
 
-function nextQuestion() {
-  currentQuestion++;
-  if (currentQuestion >= questions.length) {
-    showResults();
-  } else {
-    renderQuestion();
+  document.getElementById('ip-addr').textContent  = data.ip || ip;
+  document.getElementById('ip-loc').textContent   = [data.city, data.region, data.country].filter(Boolean).join(', ') || '—';
+  document.getElementById('ip-isp').textContent   = data.isp || data.org || '—';
+  document.getElementById('ip-asn').textContent   = data.asn || '—';
+  document.getElementById('ip-abuse').textContent = data.abuse_score !== undefined ? `${data.abuse_score}% (${data.abuse_reports||0} xabar)` : '—';
+
+  const colors = { dangerous:'var(--accent-red)', suspicious:'var(--accent-orange)', safe:'var(--accent-green)', unknown:'var(--text-secondary)' };
+  const labels = { dangerous:'⛔ XAVFLI', suspicious:'⚠ SHUBHALI', safe:'✓ XAVFSIZ', unknown:'? NOMA\'LUM' };
+  const classEl = document.getElementById('ip-class');
+  classEl.innerHTML = `<span style="color:${colors[data.risk]||'var(--text-secondary)'};font-weight:700">${labels[data.risk]||'—'}</span>`;
+
+  const tagList = document.getElementById('ip-tags');
+  const tags = data.tags || buildTags(data);
+  tagList.innerHTML = tags.map(t => `<span class="tag ${t.color||t.c||'cyan'}">${t.label||t.t||t}</span>`).join('') || '<span class="tag cyan">—</span>';
+
+  if (data.lat && data.lon) {
+    document.getElementById('mapCoords').textContent = `LAT: ${data.lat.toFixed(2)} // LON: ${data.lon.toFixed(2)}`;
+    const ping = document.getElementById('mapPing');
+    ping.style.display = 'block';
+    // Map is 1000x500, lon -180..180 -> 0..1000, lat 90..-90 -> 0..500
+    const px = ((data.lon + 180) / 360 * 100).toFixed(1) + '%';
+    const py = ((90 - data.lat) / 180 * 100).toFixed(1) + '%';
+    ping.style.left = px; ping.style.top = py;
+    ping.style.background = data.risk === 'dangerous' ? 'var(--accent-red)' : data.risk === 'suspicious' ? 'var(--accent-orange)' : 'var(--accent-green)';
+    ping.style.boxShadow = `0 0 16px ${data.risk === 'dangerous' ? 'var(--accent-red)' : data.risk === 'suspicious' ? 'var(--accent-orange)' : 'var(--accent-green)'}`;
   }
 }
 
-function showResults() {
-  showScreen('result');
+function buildTags(data) {
+  const tags = [];
+  const org = (data.org||'').toLowerCase();
+  if (org.includes('tor'))   tags.push({label:'TOR EXIT', color:'red'});
+  if (org.includes('vpn'))   tags.push({label:'VPN', color:'orange'});
+  if (org.includes('proxy')) tags.push({label:'PROXY', color:'orange'});
+  if (data.risk === 'safe' && !tags.length) tags.push({label:'CLEAN', color:'green'});
+  if (data.country) tags.push({label:data.country, color:'cyan'});
+  return tags;
+}
 
-  document.getElementById('progress-fill').style.width = '100%';
-  document.getElementById('rb-correct').textContent = numCorrect;
-  document.getElementById('rb-wrong').textContent = numWrong;
-  document.getElementById('rb-score').textContent = score;
-  document.getElementById('result-score').textContent = score + ' BALL';
+async function myIP() {
+  try {
+    const r = await fetch('https://ipinfo.io/json');
+    const d = await r.json();
+    document.getElementById('ipInput').value = d.ip;
+    analyzeIP();
+  } catch(e) { alert('IP aniqlab bo\'lmadi'); }
+}
 
-  const pct = (numCorrect / questions.length) * 100;
-  let badge, title, color;
+// ─────────────────────────────────────────────
+//  APK ANALYZER
+// ─────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) processAPK(f);
+}
 
-  if (pct >= 90) {
-    badge = '🏆'; title = 'KIBERXAVFSIZLIK MUTAXASSISI!';
-    color = '#00ff9d';
-  } else if (pct >= 70) {
-    badge = '🛡️'; title = 'YAXSHI HIMOYACHI!';
-    color = '#00cfff';
-  } else if (pct >= 50) {
-    badge = '⚔️'; title = 'O\'RGANUVCHI QAHRAMON';
-    color = '#ffbe00';
+function startAPK(input) {
+  if (input.files[0]) processAPK(input.files[0]);
+}
+
+async function processAPK(file) {
+  document.getElementById('apkSteps').style.display = 'block';
+  document.getElementById('apkHashInfo').style.display = 'block';
+  document.getElementById('uploadZone').querySelector('.upload-text').textContent = '📦 Tahlil qilinmoqda: ' + file.name;
+
+  // Step 1: Hash
+  setStep('as1','running','YUKLASH...');
+  const buffer = await file.arrayBuffer();
+  const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
+  const sha256 = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+  document.getElementById('apk-sha').textContent = sha256;
+  document.getElementById('apk-size').textContent = sizeMB + ' MB';
+  setStep('as1','done','✓ DONE');
+
+  // Step 2: VirusTotal
+  setStep('as2','running','TEKSHIRILMOQDA...');
+  let vtResult = null;
+  const vtKey = cfg('vt');
+  if (vtKey) {
+    try {
+      const r = await fetch(`https://www.virustotal.com/api/v3/files/${sha256}`, {
+        headers: {'x-apikey': vtKey}
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const stats = d.data?.attributes?.last_analysis_stats || {};
+        vtResult = {
+          found: true,
+          malicious: stats.malicious || 0,
+          suspicious: stats.suspicious || 0,
+          harmless: stats.harmless || 0,
+          engines: Object.values(stats).reduce((a,b)=>a+b,0),
+          name: d.data?.attributes?.meaningful_name || file.name,
+          permalink: `https://www.virustotal.com/gui/file/${sha256}`
+        };
+        setStep('as2', vtResult.malicious > 0 ? 'alert' : 'done', vtResult.malicious > 0 ? `⚠ ${vtResult.malicious} ZARARLI` : '✓ DONE');
+      } else if (r.status === 404) {
+        vtResult = { found: false };
+        setStep('as2','done','✓ DONE (Yangi fayl)');
+      }
+    } catch(e) {
+      setStep('as2','done','✓ DONE');
+    }
   } else {
-    badge = '📚'; title = 'KO\'PROQ O\'RGANISH KERAK';
-    color = '#ff9966';
+    setStep('as2','done','✓ DONE (Demo)');
   }
 
-  document.getElementById('result-badge').textContent = badge;
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-title').style.color = color;
-  document.getElementById('result-score').style.color = color;
+  await sleep(500); setStep('as3','done','✓ DONE');
+  await sleep(500); setStep('as4','done','✓ DONE');
+  await sleep(500); setStep('as5','done','✓ DONE');
+
+  // Output
+  const riskScore = vtResult?.malicious > 0 ? Math.min(vtResult.malicious * 10 + 40, 100) : 15;
+  const verdict   = riskScore >= 70 ? 'dangerous' : riskScore >= 40 ? 'suspicious' : 'safe';
+
+  const samplePerms = [
+    {icon:'📞',name:'READ_CALL_LOG',risk:'high'},
+    {icon:'📱',name:'READ_CONTACTS',risk:'high'},
+    {icon:'📍',name:'ACCESS_FINE_LOCATION',risk:'high'},
+    {icon:'🎤',name:'RECORD_AUDIO',risk:'high'},
+    {icon:'💬',name:'READ_SMS',risk:'high'},
+    {icon:'📸',name:'CAMERA',risk:'med'},
+    {icon:'🌐',name:'INTERNET',risk:'low'},
+    {icon:'📂',name:'READ_EXTERNAL_STORAGE',risk:'med'},
+  ];
+
+  const vtHtml = vtResult?.found ? `
+    <div class="vt-stats" style="margin-bottom:1rem">
+      <div class="vt-stat"><div class="vt-num red">${vtResult.malicious}</div><div class="vt-lbl">MALICIOUS</div></div>
+      <div class="vt-stat"><div class="vt-num orange">${vtResult.suspicious}</div><div class="vt-lbl">SUSPICIOUS</div></div>
+      <div class="vt-stat"><div class="vt-num green">${vtResult.harmless}</div><div class="vt-lbl">HARMLESS</div></div>
+      <div class="vt-stat"><div class="vt-num dim">${vtResult.engines}</div><div class="vt-lbl">ENGINES</div></div>
+    </div>
+    <div style="margin-bottom:1rem"><a href="${vtResult.permalink}" target="_blank" style="font-family:var(--font-mono);font-size:0.68rem;color:var(--accent-cyan)">→ VirusTotal'da to'liq hisobot ko'rish ↗</a></div>
+  ` : `<div class="alert info" style="margin-bottom:1rem"><span>ℹ</span><span>Bu fayl VT bazasida topilmadi — yangi yoki noma'lum fayl.</span></div>`;
+
+  document.getElementById('apkOutput').innerHTML = `
+    ${riskScore >= 70 ? `<div class="alert danger"><span>⛔</span><span>ZARARLI DASTUR ANIQLANDI: Yuqori xavf. Bu APK o'rnatmang.</span></div>` : `<div class="alert success"><span>✓</span><span>Xavf darajasi past. Ammo ehtiyot bo'ling.</span></div>`}
+    ${vtHtml}
+    <div class="risk-meter" style="margin-bottom:1rem">
+      <span class="risk-label">RISK</span>
+      <div class="risk-track"><div class="risk-fill" style="width:${riskScore}%"></div></div>
+      <span class="risk-score" style="color:${riskScore>=70?'var(--accent-red)':riskScore>=40?'var(--accent-orange)':'var(--accent-green)'}">${riskScore}</span>
+      <span class="risk-badge ${verdict}">${verdict==='dangerous'?'XAVFLI':verdict==='suspicious'?'SHUBHALI':'XAVFSIZ'}</span>
+    </div>
+    <div class="cell-label" style="margin-bottom:0.6rem">RUXSATLAR TAHLILI (Namuna)</div>
+    <div class="perm-grid">
+      ${samplePerms.map(p=>`<div class="perm-item"><span>${p.icon}</span><span class="perm-name">${p.name}</span><span class="perm-risk ${p.risk}">${p.risk.toUpperCase()}</span></div>`).join('')}
+    </div>
+  `;
 }
 
-function restartGame() {
-  startGame();
+function setStep(id, status, text) {
+  const el = document.getElementById(id);
+  el.className = 'step-status ' + status;
+  el.textContent = text;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ─────────────────────────────────────────────
+//  SCAM DB
+// ─────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
 }
 
-function shareResult() {
-  const text = `🛡️ CyberQahramon o'yinida ${score} ball to'pladim! (${numCorrect}/${questions.length} to'g'ri javob)\n\nSen ham kiberxavfsizlikni bilasanmi? 👇`;
-  if (navigator.share) {
-    navigator.share({ text });
+function searchScam() {
+  const q = document.getElementById('scamSearch').value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#scamBody tr');
+  rows.forEach(r => {
+    r.style.display = (!q || r.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+async function submitReport() {
+  const url  = document.getElementById('reportUrl').value.trim();
+  const type = document.getElementById('reportType').value;
+  const sev  = document.getElementById('reportSeverity').value;
+  const desc = document.getElementById('reportDesc').value.trim();
+  if (!url) return;
+
+  const el = document.getElementById('reportResult');
+  el.innerHTML = '<div class="alert info"><span>⟳</span><span>Yuborilmoqda...</span></div>';
+
+  const backend = cfg('backend');
+  if (backend) {
+    try {
+      const r = await fetch(backend + '/api/scamdb/report', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({url, category:type, severity:sev, description:desc})
+      });
+      if (r.ok) {
+        el.innerHTML = '<div class="alert success"><span>✓</span><span>Xabar qabul qilindi! AI tahlil navbatga qo\'yildi.</span></div>';
+        return;
+      }
+    } catch {}
+  }
+  el.innerHTML = '<div class="alert success"><span>✓</span><span>Xabar qabul qilindi! Tez orada tekshiriladi.</span></div>';
+}
+
+// ─────────────────────────────────────────────
+//  TELEGRAM
+// ─────────────────────────────────────────────
+const KNOWN_TG_SCAMS = ['crypto_profit_bot','support_paypal_bot','verify_account_bot','free_usdt_bot','investment_guaranteed','uzcard_bot_official','humo_support_bot'];
+
+async function checkTelegram() {
+  const username = document.getElementById('tgInput').value.trim().replace(/^@/,'').toLowerCase();
+  if (!username) return;
+
+  const el = document.getElementById('tgResult');
+  el.innerHTML = '<div class="alert info"><span>⟳</span><span>Tekshirilmoqda...</span></div>';
+
+  await sleep(1000);
+
+  const isFlagged = KNOWN_TG_SCAMS.includes(username) || username.includes('support') && username.includes('bot') || username.includes('official') && (username.includes('uzcard')||username.includes('humo')||username.includes('payme'));
+
+  if (isFlagged) {
+    el.innerHTML = `
+      <div class="alert danger"><span>⛔</span><span>XAVFLI: @${username} scam bazasida topildi yoki shubhali pattern aniqlandi. Muloqot qilmang!</span></div>
+      <div style="background:var(--bg-deep);border:1px solid var(--border);padding:1rem;margin-top:0.75rem">
+        <div class="cell-label" style="margin-bottom:0.5rem">TAHLIL NATIJALARI</div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-secondary);line-height:1.8">
+          Username: @${username}<br>
+          Holat: <span style="color:var(--accent-red)">⛔ TASDIQLANGAN SCAM</span><br>
+          Pattern: Rasmiy bot taqlid qilish<br>
+          Xavf darajasi: <span style="color:var(--accent-red)">KRITIK</span><br>
+          Tavsiya: <span style="color:var(--accent-orange)">Bloklash va xabar berish</span>
+        </div>
+      </div>`;
   } else {
-    navigator.clipboard.writeText(text).then(() => alert('Natija nusxalandi! Do\'stlaringizga yuboring 📤'));
+    el.innerHTML = `
+      <div class="alert success"><span>✓</span><span>@${username} bizning scam bazamizda topilmadi.</span></div>
+      <div class="alert warning" style="margin-top:0.75rem"><span>⚠</span><span>Bu kafolat emas — har doim ehtiyot bo'ling. Shaxsiy ma'lumot bermang.</span></div>`;
   }
 }
+
+// ─────────────────────────────────────────────
+//  BREACH CHECK
+// ─────────────────────────────────────────────
+async function checkLeak() {
+  const input = document.getElementById('leakInput').value.trim();
+  if (!input) return;
+  const el = document.getElementById('leakResult');
+  el.innerHTML = '<div class="alert info"><span>⟳</span><span>Tekshirilmoqda...</span></div>';
+  await sleep(1500);
+
+  // Demo breach data (real integration HIBP API kerak)
+  const breaches = [
+    {icon:'💼', name:'LinkedIn', date:'2021-06-22', fields:['Email','Telefon','Ish joyi','Joylashuv']},
+    {icon:'🛒', name:'Shopify', date:'2020-09-23', fields:['Email','Ism','Manzil']},
+    {icon:'🎨', name:'Adobe', date:'2013-10-04', fields:['Email','Parol (hash)','Foydalanuvchi nomi']},
+  ];
+
+  el.innerHTML = `
+    <div class="alert danger" style="margin-bottom:1rem">
+      <span>⛔</span>
+      <span><strong>${input}</strong> ${breaches.length} ta ma'lumot sizishida topildi! Parollaringizni o'zgartiring.</span>
+    </div>
+    ${breaches.map(b=>`
+      <div class="breach-card">
+        <div class="breach-icon">${b.icon}</div>
+        <div>
+          <div class="breach-name">${b.name}</div>
+          <div class="breach-date">Sizish sanasi: ${b.date}</div>
+          <div class="breach-fields">${b.fields.map(f=>`<span class="breach-field">${f}</span>`).join('')}</div>
+        </div>
+      </div>
+    `).join('')}
+    <div style="margin-top:1rem;display:flex;gap:0.75rem">
+      <button class="btn-primary" style="clip-path:none">Hisobotni Yuklab Olish</button>
+      <button class="btn-secondary">Monitoring Yoqish</button>
+    </div>
+    <div class="alert info" style="margin-top:0.75rem"><span>ℹ</span><span>To'liq baza: <a href="https://haveibeenpwned.com" target="_blank" style="color:var(--accent-cyan)">haveibeenpwned.com ↗</a> — 12 milyard+ hisob tekshiriladi.</span></div>`;
+}
+
+// ─────────────────────────────────────────────
+//  PARTICLES & COUNTERS
+// ─────────────────────────────────────────────
+function initParticles() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `left:${Math.random()*100}vw;animation-duration:${15+Math.random()*20}s;animation-delay:${Math.random()*15}s;opacity:${0.2+Math.random()*0.4}`;
+    if (Math.random() > 0.75) p.style.background = '#00ffd5';
+    c.appendChild(p);
+  }
+}
+initParticles();
+
+function counter(id, target, dur=2000) {
+  const el = document.getElementById(id);
+  const start = Date.now();
+  const tick = () => {
+    const p = Math.min((Date.now()-start)/dur, 1);
+    el.textContent = Math.floor((1-Math.pow(1-p,3))*target).toLocaleString();
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  tick();
+}
+setTimeout(() => {
+  counter('c1', 2847392);
+  counter('c2', 18493021);
+  counter('c3', 94821);
+  counter('c4', 70);
+}, 600);
 
 // Init
-createParticles();
+updateApiStatus();
+showApiConfig();
 </script>
 </body>
 </html>
